@@ -1,0 +1,2 @@
+Select * from table1 where a = 1;
+Select * from table2 where b = 2;
