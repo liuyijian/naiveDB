@@ -50,6 +50,9 @@ gradle-app.setting
 *.njsproj
 *.sln
 *.sw*
+
+# eclipse
 .classpath
 .project
 .settings
+*/bin
