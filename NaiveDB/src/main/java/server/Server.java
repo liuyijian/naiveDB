@@ -1,9 +1,10 @@
+package server;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.List;
 
 public class Server {
     /*
@@ -22,20 +23,20 @@ public class Server {
     // 加载一个MetaData类的对象
 
     //初始化服务器
-    public void init(){
+    public void init() {
         // 出错的话会自动回收socket
 
         // 此处应该先加载元数据
 
-        try(ServerSocket serverSocket = new ServerSocket(PORT)){
+        try(ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("naiveDB server is running!");
-            while(true){
+            while(true) {
                 // 阻塞接受客户端连接
                 Socket client = serverSocket.accept();
                 // 为客户端新建线程
                 new HandlerThread(client);
             }
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -45,20 +46,20 @@ public class Server {
 
         public Socket socket;
 
-        public HandlerThread(Socket socket){
+        public HandlerThread(Socket socket) {
             this.socket = socket;
             new Thread(this).start();
         }
 
         @Override
-        public void run(){
+        public void run() {
             try (
-                    // 新建数据输入输出流对象，写入try的资源块中
-                    DataInputStream input = new DataInputStream(socket.getInputStream());
-                    DataOutputStream out = new DataOutputStream(socket.getOutputStream());
-                    ){
+                // 新建数据输入输出流对象，写入try的资源块中
+                DataInputStream input = new DataInputStream(socket.getInputStream());
+                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                ){
 
-                while(true){
+                while(true) {
                     // 此处未来可扩展的功能：权限认证，客户端quit命令，等等
 
                     //读取客户端数据
@@ -68,7 +69,7 @@ public class Server {
                     String outputStr = inputStr;
                     out.writeUTF(outputStr);
                 }
-            } catch (IOException e){
+            } catch (IOException e) {
                 System.out.println("服务器异常" + e.getMessage());
             } catch (Exception e) {
                 // 这里修改为自定义的Exception，来对应client的quit命令，SQLParser中处理到quit就去throw一个出来;
@@ -77,7 +78,7 @@ public class Server {
                 if (socket != null) {
                     try {
                         socket.close();
-                    } catch (Exception e){
+                    } catch (Exception e) {
                         socket = null;
                         System.out.println("服务器finally异常" + e.getMessage());
                     }
@@ -86,7 +87,7 @@ public class Server {
         }
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         Server server = new Server();
         server.init();
     }
