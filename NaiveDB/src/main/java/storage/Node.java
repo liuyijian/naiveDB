@@ -34,6 +34,9 @@ public abstract class Node<Key extends Comparable<Key>, Value> {
     }
     
     // return null if there isn't a new root
+    public abstract Node<Key, Value> delete(Key key);
+    
+    // return null if there isn't a new root
     public abstract Node<Key, Value> insert(Key key, Value value);
 
     protected abstract void collect(Vector<Value> resultSet, Key key);
@@ -115,6 +118,187 @@ public abstract class Node<Key extends Comparable<Key>, Value> {
         }
     }
 
+    protected Node<Key, Value> deleteEntry(Key key, Object value) {
+
+    	Node<Key, Value> newRoot = null;
+    	
+		this.removeKeyValue(key, value);
+		
+		if (this.isRoot()) {
+			
+			if (!this.isExternalNode() && this.size == 0) {
+				
+				newRoot = ((InternalNode<Key, Value>)this).children[0];
+				newRoot.parent = null;
+			}
+			return newRoot;
+		}
+		
+		if (!this.hasTooFewValues()) {
+			return newRoot;
+		}
+		
+		Node<Key, Value> brother = this.parent.getPreviousOrNextChildOf(this);
+		Key keyBetweenBrothers = this.parent.getKeyBetweenbrothers(this);
+		
+		if (this.canFitInASingleNodeWith(brother)) {
+			
+			// coalesce nodes
+			boolean thisIsAPred = this.isAPredecessorOf(brother);
+			Node<Key, Value> pred = thisIsAPred ? this : brother;
+			Node<Key, Value> succ = thisIsAPred ? brother : this;
+			
+			if (succ.isExternalNode()) {
+				((ExternalNode<Key, Value>)pred).appendWithBrotherAdjustment(
+						                        (ExternalNode<Key, Value>) succ);
+			} 
+			else {
+				((InternalNode<Key, Value>)pred).appendWithParentAdjustment(
+												keyBetweenBrothers, 
+												(InternalNode<Key, Value>) succ);
+			}
+			
+			newRoot = succ.parent.deleteEntry(keyBetweenBrothers, succ);
+		}
+		else { // brothers can't fit in a single node
+			
+			// redistribution: borrow an entry from brother
+			if (brother.isAPredecessorOf(this)) {
+				
+				if (!this.isExternalNode()) {
+					
+					Key lastKey = (Key) brother.keys[brother.size - 1];
+					Node<Key, Value> lastChild = ((InternalNode<Key, Value>) brother)
+											     .children[brother.size];
+					
+					brother.removeLastKeyValue();
+					this.insertAsFirstKeyValue(keyBetweenBrothers, lastChild);
+					((InternalNode<Key, Value>) this.parent).replaceKey(keyBetweenBrothers, 
+							                                            lastKey);
+				}
+				else {
+					
+					Key lastKey = (Key) brother.keys[brother.size - 1];
+					Object lastValue = ((ExternalNode<Key, Value>) brother)
+						     		   .values[brother.size - 1];
+					
+					brother.removeLastKeyValue();
+					this.insertAsFirstKeyValue(lastKey, lastValue);
+					((InternalNode<Key, Value>) this.parent).replaceKey(keyBetweenBrothers,
+							                                            lastKey);
+				}
+			}
+			else { // this is a predecessor of brother
+				
+				if (!this.isExternalNode()) {
+				
+					Key firstKey = (Key) brother.keys[0];
+					Node<Key, Value> firstChild = ((InternalNode<Key, Value>) brother)
+							                      .children[0];
+					
+					brother.removeFirstKeyValue();
+					this.insertAsLastKeyValue(keyBetweenBrothers, firstChild);
+					((InternalNode<Key, Value>) this.parent).replaceKey(keyBetweenBrothers, 
+                            											firstKey);
+				}
+				else {
+					
+					Key firstKey = (Key) brother.keys[0];
+					Object firstValue = ((ExternalNode<Key, Value>) brother).values[0];
+				
+					brother.removeFirstKeyValue();
+					this.insertAsLastKeyValue(firstKey, firstValue);
+					((InternalNode<Key, Value>) this.parent).replaceKey(keyBetweenBrothers, 
+																		firstKey);
+				}
+			}
+		}
+		
+		return newRoot;
+	}
+    
+    protected abstract void insertAsFirstKeyValue(Key key, Object value);
+    
+    protected abstract void insertAsLastKeyValue(Key key, Object value);
+    
+    protected abstract void removeLastKeyValue();
+    
+    protected abstract void removeFirstKeyValue();
+    
+    protected boolean isAPredecessorOf(Node<Key, Value> node) {
+    	
+    	if (this.isRoot()) {
+    		return false;
+    	}
+    	
+    	Node<Key, Value> parent = this.parent;
+    	
+    	int i = 0;
+    	for (; i < parent.size + 1; ++i) {
+    		if (((InternalNode<Key, Value>)parent).children[i].equals(this)) {
+    			break;
+    		}
+    	}
+    	
+    	return i != parent.size && ((InternalNode<Key, Value>)parent).children[i + 1]
+    			                                                     .equals(node);
+    }
+    
+	protected Node<Key, Value> getPreviousOrNextChildOf(Node<Key, Value> node) {
+		
+		if (this.isExternalNode()) {
+			return null;
+		}
+
+		InternalNode<Key, Value> my = (InternalNode<Key, Value>) this;
+		
+		if (my.children[0].equals(node)) {
+			return my.children[1];
+		}
+		
+		for (int i = 1; i < this.size + 1; ++i) {
+			if (my.children[i].equals(node)) {
+				return my.children[i - 1];
+			}
+		}
+		
+		return null;
+	}
+	
+	// brother := node.parent.getPreviousOrNextChildOf(node)
+	protected Key getKeyBetweenbrothers(Node<Key, Value> node) {
+
+		if (this.isExternalNode()) {
+			return null;
+		}
+
+		InternalNode<Key, Value> my = (InternalNode<Key, Value>) this;
+		
+		if (my.children[0].equals(node)) {
+			return (Key) my.keys[0];
+		}
+		
+		for (int i = 1; i < this.size + 1; ++i) {
+			if (my.children[i].equals(node)) {
+				return (Key) my.keys[i - 1];
+			}
+		}
+		
+		return null;
+	}
+	
+    protected boolean isRoot() {
+
+    	return this.parent == null;
+    }
+    
+    protected abstract boolean isExternalNode();
+    
+    protected abstract boolean hasTooFewValues();
+    
+    protected abstract boolean canFitInASingleNodeWith(Node<Key, Value> node);
+ 
+	protected abstract void removeKeyValue(Key key, Object value);
 }
 
 
@@ -239,12 +423,166 @@ class InternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
         return newNode;
     }
 
+	@Override
+	public Node<Key, Value> delete(Key key) {
+		
+		int i = 0;  
+        for (; i < this.size; i++) {  
+            if (key.compareTo((Key)this.keys[i]) < 0 ) {
+                break;  
+            }
+        }  
+        
+        return this.children[i].delete(key);
+	}
+
+	@Override
+	protected boolean isExternalNode() {
+
+		return false;
+	}
+
+	
+	@Override
+	protected void removeKeyValue(Key key, Object value) {
+		
+		for (int i = 0, j = 0; i < this.size; ++i) {
+			if (key.equals(this.keys[i])) {
+				continue;
+			}
+			this.keys[j] = this.keys[i];
+			++j;
+		}
+		
+		for (int i = 0, j = 0; i < this.size + 1; ++i) {
+			if (value.equals(this.children[i])) {
+				continue;
+			}
+			this.children[j] = this.children[i];
+			++j;
+		}
+		
+		this.keys[this.size - 1] = null;
+		this.children[this.size] = null;
+		
+		--this.size;
+	}
+
+	
+	@Override
+	protected boolean hasTooFewValues() {
+		
+		// For non-leaf nodes, this criterion means less than ⌈n/2⌉ pointers.
+        int limit = Double.valueOf(Math.ceil(1.0 * this.n / 2)).intValue(); 
+		return this.size + 1 < limit;
+	}
+
+	
+	@Override
+	protected boolean canFitInASingleNodeWith(Node<Key, Value> node) {
+		
+    	return this.size + node.size + 1 <= this.n - 1;
+	}
+
+	
+
+	protected void appendWithParentAdjustment(Key key, InternalNode<Key, Value> node) {
+           	 
+		// append keys
+		int predPointer = this.size;
+		int succPointer = 0;
+		
+		this.keys[predPointer] = key;
+		++predPointer;
+		
+		for (; succPointer < node.size; ++predPointer, ++succPointer) {
+			this.keys[predPointer] = node.keys[succPointer];
+		}
+		
+		// append children
+		predPointer = this.size + 1;
+		succPointer = 0;
+				
+		for (; succPointer < node.size + 1; ++predPointer, ++succPointer) {
+			this.children[predPointer] = node.children[succPointer];
+			this.children[predPointer].parent = this;
+		}
+		
+		// this.size
+		this.size += node.size + 1;
+    }
+
+	
+	@Override
+	protected void removeLastKeyValue() {
+		
+		this.keys[this.size - 1] = null;
+		this.children[this.size] = null;
+		
+		--this.size;
+	}
+
+	
+	@Override
+	protected void insertAsFirstKeyValue(Key key, Object value) {
+		
+		for (int i = this.size; 0 < i; --i) {
+			this.keys[i] = this.keys[i - 1];
+		}
+		this.keys[0] = key;
+		
+		for (int i = this.size + 1; 0 < i; --i) {
+			this.children[i] = this.children[i - 1];
+		}
+		this.children[0] = (Node<Key, Value>) value;
+		this.children[0].parent = this;
+		
+		++this.size;
+	}
+	
+	protected void replaceKey(Key oldKey, Key newKey) {
+		
+		for (int i = 0; i < this.size; ++i) {
+			if (oldKey.compareTo((Key) this.keys[i]) == 0) {
+				this.keys[i] = newKey;
+				break;
+			}
+		}
+	}
+
+	
+	@Override
+	protected void insertAsLastKeyValue(Key key, Object value) {
+	
+		this.keys[this.size] = key;
+		this.children[this.size + 1] = (Node<Key, Value>) value;
+		this.children[this.size + 1].parent = this;
+		
+		++this.size;
+	}
+
+	
+	@Override
+	protected void removeFirstKeyValue() {
+		
+		for (int i = 1; i < this.size; ++i) {
+			this.keys[i - 1] = this.keys[i]; 
+		}
+		for (int i = 1; i < this.size + 1; ++i) {
+			this.children[i - 1] = this.children[i];
+		}
+		
+		this.keys[this.size - 1] = null;
+		this.children[this.size] = null;
+		
+		--this.size;
+	}
 }
 
 
 class ExternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> {
     
-    protected Object[]                    values;
+    protected Object[]                 values;
     protected ExternalNode<Key, Value> brother;
     
     public ExternalNode(int n, Node<Key, Value> parent, 
@@ -412,4 +750,129 @@ class ExternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
         return newNode;
     }
 
+	@Override
+	public Node<Key, Value> delete(Key key) {
+		
+		boolean found = false;
+		int i = 0;
+		for (; i < this.size; ++i) {
+            if (key.compareTo((Key)this.keys[i]) == 0) {
+                found = true;
+                break;
+            }
+        }
+		
+		return found ? this.deleteEntry((Key)this.keys[i], this.values[i])
+				     : null;
+	}
+		
+	@Override
+	protected void removeKeyValue(Key key, Object value) {
+		
+		for (int i = 0, j = 0; i < this.size; ++i) {
+			if (key.equals(this.keys[i])) {
+				continue;
+			}
+			this.keys[j] = this.keys[i];
+			++j;
+		}
+		
+		for (int i = 0, j = 0; i < this.size; ++i) {
+			if (value.equals(this.values[i])) {
+				continue;
+			}
+			this.values[j] = this.values[i];
+			++j;
+		}
+		
+		this.keys[this.size - 1] = null;
+		this.values[this.size - 1] = null;
+		
+		--this.size;
+	}
+
+	@Override
+	protected boolean isExternalNode() {
+
+		return true;
+	}
+	
+	@Override
+	protected boolean hasTooFewValues() {
+		
+		// for leaf nodes, it means less than ⌈(n − 1)/2⌉ values.
+		int limit = Double.valueOf(Math.ceil(1.0 * (this.n - 1) / 2)).intValue(); 
+		return this.size < limit;
+	}
+	
+	@Override
+	protected boolean canFitInASingleNodeWith(Node<Key, Value> node) {
+						
+    	return this.size + node.size <= this.n - 1;
+	}
+
+	protected void appendWithBrotherAdjustment(ExternalNode<Key, Value> node) {
+		
+		int predPointer = this.size;
+		int succPointer = 0;
+		for (; succPointer < node.size; ++predPointer, ++succPointer) {
+			this.keys[predPointer] = node.keys[succPointer];
+			this.values[predPointer] = node.keys[succPointer];
+			++this.size;
+		}
+		
+		this.brother = node.brother;
+	}
+
+	
+	@Override
+	protected void removeLastKeyValue() {
+
+		this.keys[this.size - 1] = null;
+		this.values[this.size - 1] = null;
+		
+		--this.size;
+	}
+
+	
+	@Override
+	protected void insertAsFirstKeyValue(Key key, Object value) {
+		
+		for (int i = this.size; 0 < i; --i) {
+			this.keys[i] = this.keys[i - 1];
+		}
+		this.keys[0] = key;
+		
+		for (int i = this.size; 0 < i; --i) {
+			this.values[i] = this.values[i - 1];
+		}
+		this.values[0] = value;
+		
+		++this.size;
+	}
+
+	
+	@Override
+	protected void insertAsLastKeyValue(Key key, Object value) {
+		
+		this.keys[this.size] = key;
+		this.values[this.size] = value;
+		
+		++this.size;
+	}
+
+	
+	@Override
+	protected void removeFirstKeyValue() {
+
+		for (int i = 1; i < this.size; ++i) {
+			this.keys[i - 1] = this.keys[i]; 
+			this.values[i - 1] = this.keys[i];
+		}
+		
+		this.keys[this.size - 1] = null;
+		this.values[this.size - 1] = null;
+		
+		--this.size;
+	}
 }
