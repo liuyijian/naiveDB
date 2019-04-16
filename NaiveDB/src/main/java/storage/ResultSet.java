@@ -14,7 +14,18 @@ public class ResultSet<Key extends Comparable<Key>, Value> {
 	
 	// key-value should be the reference in its external node 
 	public void add(Key key, Value value) {
+		
 		this.result.add(new Entry<Key, Value>(key, value));
+	}
+	
+	public Vector<Entry<Key, Value>> getResultSet() {
+		
+		return this.result;
+	}
+	
+	public int size() {
+		
+		return this.result.size();
 	}
 	
 	@Override

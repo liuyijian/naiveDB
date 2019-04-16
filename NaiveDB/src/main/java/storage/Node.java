@@ -1,7 +1,5 @@
 package storage;
 
-import java.util.Vector;
-
 
 public abstract class Node<Key extends Comparable<Key>, Value> {
     
@@ -21,7 +19,9 @@ public abstract class Node<Key extends Comparable<Key>, Value> {
     public ResultSet<Key, Value> findAll(Key key) {
         
         ResultSet<Key, Value> resultSet = new ResultSet<Key, Value>();
-        this.collect(resultSet, key);
+        if (0 < this.size) {
+            this.collect(resultSet, key);        	
+        }
         return resultSet;
     }
     
@@ -29,15 +29,19 @@ public abstract class Node<Key extends Comparable<Key>, Value> {
     										 Key right, boolean isRightInclusive) {
         
         ResultSet<Key, Value> resultSet = new ResultSet<Key, Value>();
-        this.collectIfBetween(resultSet, left, isLeftInclusive, right, 
-        		              isRightInclusive);
+        if (0 < this.size) {
+		    this.collectIfBetween(resultSet, left, isLeftInclusive, right, 
+		    		              isRightInclusive);
+        }
         return resultSet;
     }
     
     public ResultSet<Key, Value> findLarger(Key left, boolean isLeftInclusive) {
     	
     	ResultSet<Key, Value> resultSet = new ResultSet<Key, Value>();
-        this.collectIfLarger(resultSet, left, isLeftInclusive);
+        if (0 < this.size) {
+        	this.collectIfLarger(resultSet, left, isLeftInclusive);
+        }
         return resultSet;
     }
     
@@ -45,14 +49,18 @@ public abstract class Node<Key extends Comparable<Key>, Value> {
     									     Key min) {
     	
     	ResultSet<Key, Value> resultSet = new ResultSet<Key, Value>();
-        this.collectIfSmaller(resultSet, right, isRightInclusive, min);
+        if (0 < this.size) {
+        	this.collectIfSmaller(resultSet, right, isRightInclusive, min);
+        }
         return resultSet;
     }
     
     public ResultSet<Key, Value> findNotEqual(Key key, Key min) {
     	
     	ResultSet<Key, Value> resultSet = new ResultSet<Key, Value>();
-        this.collectIfNotEqual(resultSet, key, min);
+        if (0 < this.size) {
+        	this.collectIfNotEqual(resultSet, key, min);
+        }
         return resultSet;
     }
     
@@ -61,7 +69,7 @@ public abstract class Node<Key extends Comparable<Key>, Value> {
     
     // return null if there isn't a new root
     public abstract Node<Key, Value> insert(Key key, Value value);
-
+    
     protected abstract void collect(ResultSet<Key, Value> resultSet, Key key);
     
     protected abstract void collectIfBetween(ResultSet<Key, Value> resultSet, Key left,
@@ -371,7 +379,7 @@ class InternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
         }
         
         this.children[i].collectIfBetween(resultSet, left, isLeftInclusive, right, 
-                                 isRightInclusive);  
+                                          isRightInclusive);  
     }
 
     @Override
@@ -379,7 +387,7 @@ class InternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
         
         int i = 0;  
         for (; i < this.size; i++) {  
-            if (key.compareTo((Key)this.keys[i]) < 0 ) {
+            if (key.compareTo((Key)this.keys[i]) < 0) {
                 break;  
             }
         }  
@@ -458,6 +466,10 @@ class InternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
 
 	@Override
 	public Node<Key, Value> delete(Key key) {
+		
+		if (this.size == 0) {
+			return null;
+		}
 		
 		int i = 0;  
         for (; i < this.size; i++) {  
