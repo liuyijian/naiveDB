@@ -16,7 +16,7 @@ public abstract class Node<Key extends Comparable<Key>, Value> {
         this.n        = n;
     }
     
-    public ResultSet<Key, Value> findAll(Key key) {
+    public ResultSet<Key, Value> find(Key key) {
         
         ResultSet<Key, Value> resultSet = new ResultSet<Key, Value>();
         if (0 < this.size) {
@@ -473,7 +473,7 @@ class InternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
 		
 		int i = 0;  
         for (; i < this.size; i++) {  
-            if (key.compareTo((Key)this.keys[i]) < 0 ) {
+            if (key.compareTo((Key)this.keys[i]) < 0) {
                 break;  
             }
         }  
@@ -685,12 +685,8 @@ class ExternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
         for (int i = 0; i < this.size; ++i) {
             if (key.compareTo((Key)this.keys[i]) == 0) {
                 resultSet.add((Key)this.keys[i], (Value)this.values[i]);
+                return;
             }
-        }
-        
-        if (key.compareTo((Key)this.keys[this.size - 1]) == 0 
-            && this.brother != null) {
-            this.brother.collect(resultSet, key);
         }
     }
 

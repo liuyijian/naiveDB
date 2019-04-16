@@ -16,9 +16,9 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
 		this.root = new ExternalNode<Key, Value>(n, null, null);
 	}
 	
-	public ResultSet<Key, Value> findAll(Key key) {
+	public ResultSet<Key, Value> find(Key key) {
 		
-		return this.root.findAll(key);
+		return this.root.find(key);
 	}
 	
 	public ResultSet<Key, Value> findBetween(Key left, boolean isLeftInclusive, 
@@ -44,6 +44,12 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
     
     public void insert(Key key, Value value) {
     	
+    	ResultSet<Key, Value> resultSet = this.find(key);
+    	if (!resultSet.isEmpty()) {
+    		// key should be unique
+    		return;
+    	}
+    	
     	if (this.minKey == null || key.compareTo(this.minKey) < 0) {
     		this.minKey = key;
     	}
@@ -55,11 +61,11 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
     	++this.size;
     }
     
-    public void deleteAll(Key key) {
+    public void delete(Key key) {
     	
-    	ResultSet<Key, Value> resultSet = this.findAll(key);
+    	ResultSet<Key, Value> resultSet = this.find(key);
     	for (Entry<Key, Value> entry: resultSet.getResultSet()) {
-    		this.delete(entry.key);
+    		this.deleteSingle(entry.key);
     	}
     	
     	this.size -= resultSet.size();
@@ -71,7 +77,7 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
     	ResultSet<Key, Value> resultSet = this.findBetween(left, isLeftInclusive, 
     			                                           right, isRightInclusive);
     	for (Entry<Key, Value> entry: resultSet.getResultSet()) {
-    		this.delete(entry.key);
+    		this.deleteSingle(entry.key);
     	}
     	
     	this.size -= resultSet.size();
@@ -81,7 +87,7 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
     	
     	ResultSet<Key, Value> resultSet = this.findLarger(left, isLeftInclusive);
     	for (Entry<Key, Value> entry: resultSet.getResultSet()) {
-    		this.delete(entry.key);
+    		this.deleteSingle(entry.key);
 		}
 
     	this.size -= resultSet.size();
@@ -91,7 +97,7 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
 	
     	ResultSet<Key, Value> resultSet = this.findSmaller(right, isRightInclusive);
     	for (Entry<Key, Value> entry: resultSet.getResultSet()) {
-    		this.delete(entry.key);
+    		this.deleteSingle(entry.key);
 		}
 
     	this.size -= resultSet.size();
@@ -101,13 +107,13 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
     	
     	ResultSet<Key, Value> resultSet = this.findNotEqual(key);
     	for (Entry<Key, Value> entry: resultSet.getResultSet()) {
-    		this.delete(entry.key);
+    		this.deleteSingle(entry.key);
 		}
 
     	this.size -= resultSet.size();
     }
     
-    protected void delete(Key key) {
+    protected void deleteSingle(Key key) {
     	
     	Node<Key, Value> newRootOrNull = this.root.delete(key);
     	if (newRootOrNull != null) {

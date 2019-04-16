@@ -28,6 +28,11 @@ public class ResultSet<Key extends Comparable<Key>, Value> {
 		return this.result.size();
 	}
 	
+	public boolean isEmpty() {
+		
+		return this.result.isEmpty();
+	}
+	
 	@Override
 	public String toString() {
 		return this.result.toString();
