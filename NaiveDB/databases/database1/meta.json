@@ -1,0 +1,1 @@
+{"table2":{"columns":{"ID":{"TYPE":"INT","NOT_NULL":true},"MARK":{"MAX":20,"TYPE":"DOUBLE","NOT_NULL":true}},"primary_key":"ID"},"table1":{"columns":{"ID":{"TYPE":"INT","NOT_NULL":true},"NAME":{"MAX":20,"TYPE":"STRING","NOT_NULL":true}},"primary_key":"ID"}}

@@ -1,5 +1,7 @@
 package server;
 
+import metadata.MetaData;
+
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -21,13 +23,21 @@ public class Server {
     // List<Socket> socketList;
 
     // 加载一个MetaData类的对象
+    public MetaData metaData;
 
     //初始化服务器
     public void init() {
         // 出错的话会自动回收socket
 
-        // 此处应该先加载元数据
+        // 加载元数据
+        try{
+            metaData = new MetaData();
+        } catch (IOException e){
+           System.out.println("cannot find metadata file");
+           return;
+        }
 
+        // 监听连接
         try(ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("naiveDB server is running!");
             while(true) {
