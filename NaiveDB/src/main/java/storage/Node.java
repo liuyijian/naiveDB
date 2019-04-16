@@ -18,18 +18,41 @@ public abstract class Node<Key extends Comparable<Key>, Value> {
         this.n        = n;
     }
     
-    public Vector<Value> findAll(Key key) {
+    public ResultSet<Key, Value> findAll(Key key) {
         
-        Vector<Value> resultSet = new Vector<Value>();
+        ResultSet<Key, Value> resultSet = new ResultSet<Key, Value>();
         this.collect(resultSet, key);
         return resultSet;
     }
     
-    public Vector<Value> findAll(Key left, boolean isLeftInclusive, Key right, 
-                                 boolean isRightInclusive) {
+    public ResultSet<Key, Value> findBetween(Key left, boolean isLeftInclusive, 
+    										 Key right, boolean isRightInclusive) {
         
-        Vector<Value> resultSet = new Vector<Value>();
-        this.collect(resultSet, left, isLeftInclusive, right, isRightInclusive);
+        ResultSet<Key, Value> resultSet = new ResultSet<Key, Value>();
+        this.collectIfBetween(resultSet, left, isLeftInclusive, right, 
+        		              isRightInclusive);
+        return resultSet;
+    }
+    
+    public ResultSet<Key, Value> findLarger(Key left, boolean isLeftInclusive) {
+    	
+    	ResultSet<Key, Value> resultSet = new ResultSet<Key, Value>();
+        this.collectIfLarger(resultSet, left, isLeftInclusive);
+        return resultSet;
+    }
+    
+    public ResultSet<Key, Value> findSmaller(Key right, boolean isRightInclusive,
+    									     Key min) {
+    	
+    	ResultSet<Key, Value> resultSet = new ResultSet<Key, Value>();
+        this.collectIfSmaller(resultSet, right, isRightInclusive, min);
+        return resultSet;
+    }
+    
+    public ResultSet<Key, Value> findNotEqual(Key key, Key min) {
+    	
+    	ResultSet<Key, Value> resultSet = new ResultSet<Key, Value>();
+        this.collectIfNotEqual(resultSet, key, min);
         return resultSet;
     }
     
@@ -39,12 +62,21 @@ public abstract class Node<Key extends Comparable<Key>, Value> {
     // return null if there isn't a new root
     public abstract Node<Key, Value> insert(Key key, Value value);
 
-    protected abstract void collect(Vector<Value> resultSet, Key key);
+    protected abstract void collect(ResultSet<Key, Value> resultSet, Key key);
     
-    protected abstract void collect(Vector<Value> resultSet, Key left,
-                                    boolean isLeftInclusive, Key right, 
-                                    boolean isRightInclusive);
+    protected abstract void collectIfBetween(ResultSet<Key, Value> resultSet, Key left,
+		                                     boolean isLeftInclusive, Key right, 
+		                                     boolean isRightInclusive);
 
+    protected abstract void collectIfLarger(ResultSet<Key, Value> resultSet, Key left,
+            								boolean isLeftInclusive);
+    
+    protected abstract void collectIfSmaller(ResultSet<Key, Value> resultSet, Key right, 
+            								 boolean isRightInclusive, Key min);
+    
+    protected abstract void collectIfNotEqual(ResultSet<Key, Value> resultSet, Key key, 
+            								  Key min);
+    
     protected abstract void clear();
     
     protected abstract Node<Key, Value> copyToNewNodeWithNewN(int n);
@@ -104,7 +136,8 @@ public abstract class Node<Key extends Comparable<Key>, Value> {
                 	parent.children[i].parent = parent;
                 }
                 
-                System.arraycopy(temp.children, mid, newNode.children, 0, this.n - mid + 1);
+                System.arraycopy(temp.children, mid, newNode.children, 0, 
+                		         this.n - mid + 1);
                 System.arraycopy(temp.keys, mid, newNode.keys, 0, this.n - mid);
                 newNode.size = this.n - mid;
                 for (int i = 0; i < newNode.size + 1; ++i) {
@@ -313,7 +346,7 @@ class InternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
     }
 
     @Override
-    protected void collect(Vector<Value> resultSet, Key key) {
+    protected void collect(ResultSet<Key, Value> resultSet, Key key) {
         
         int i = 0;  
         for (; i < this.size; ++i) {
@@ -326,9 +359,9 @@ class InternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
     }
     
     @Override
-    protected void collect(Vector<Value> resultSet, Key left, 
-                           boolean isLeftInclusive, Key right, 
-                           boolean isRightInclusive) {
+    protected void collectIfBetween(ResultSet<Key, Value> resultSet, Key left, 
+		                            boolean isLeftInclusive, Key right, 
+		                            boolean isRightInclusive) {
         
         int i = 0;  
         for (; i < this.size; ++i) {
@@ -337,7 +370,7 @@ class InternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
             }
         }
         
-        this.children[i].collect(resultSet, left, isLeftInclusive, right, 
+        this.children[i].collectIfBetween(resultSet, left, isLeftInclusive, right, 
                                  isRightInclusive);  
     }
 
@@ -577,6 +610,47 @@ class InternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
 		
 		--this.size;
 	}
+
+	@Override
+	protected void collectIfLarger(ResultSet<Key, Value> resultSet, Key left, 
+			                       boolean isLeftInclusive) {
+		
+		int i = 0;  
+        for (; i < this.size; ++i) {
+            if (left.compareTo((Key)this.keys[i]) < 0) {
+                break;  
+            }
+        }
+        
+        this.children[i].collectIfLarger(resultSet, left, isLeftInclusive);  
+	}
+
+	@Override
+	protected void collectIfSmaller(ResultSet<Key, Value> resultSet, Key right, 
+			                        boolean isRightInclusive, Key min) {
+		
+		int i = 0;  
+        for (; i < this.size; ++i) {
+            if (min.compareTo((Key)this.keys[i]) < 0) {
+                break;  
+            }
+        }
+        
+        this.children[i].collectIfSmaller(resultSet, right, isRightInclusive, min);  
+	}
+
+	@Override
+	protected void collectIfNotEqual(ResultSet<Key, Value> resultSet, Key key, Key min) {
+		
+		int i = 0;  
+        for (; i < this.size; ++i) {
+            if (min.compareTo((Key)this.keys[i]) < 0) {
+                break;  
+            }
+        }
+        
+        this.children[i].collectIfNotEqual(resultSet, key, min);  
+	}
 }
 
 
@@ -594,11 +668,11 @@ class ExternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
     }
     
     @Override
-    protected void collect(Vector<Value> resultSet, Key key) { 
+    protected void collect(ResultSet<Key, Value> resultSet, Key key) { 
         
         for (int i = 0; i < this.size; ++i) {
             if (key.compareTo((Key)this.keys[i]) == 0) {
-                resultSet.add((Value)this.values[i]);
+                resultSet.add((Key)this.keys[i], (Value)this.values[i]);
             }
         }
         
@@ -609,15 +683,15 @@ class ExternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
     }
 
     @Override
-    protected void collect(Vector<Value> resultSet, Key left, 
-                           boolean isLeftInclusive, Key right, 
-                           boolean isRightInclusive) {
+    protected void collectIfBetween(ResultSet<Key, Value> resultSet, Key left, 
+		                            boolean isLeftInclusive, Key right, 
+		                            boolean isRightInclusive) {
         
         if (isLeftInclusive && isRightInclusive) {
             for (int i = 0; i < this.size; ++i) {
                 if (left.compareTo((Key)this.keys[i]) <= 0
                     && right.compareTo((Key)this.keys[i]) >= 0) {
-                    resultSet.add((Value)this.values[i]);
+                    resultSet.add((Key)this.keys[i], (Value)this.values[i]);
                 }
             }
         }
@@ -625,7 +699,7 @@ class ExternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
             for (int i = 0; i < this.size; ++i) {
                 if (left.compareTo((Key)this.keys[i]) <= 0
                     && right.compareTo((Key)this.keys[i]) > 0) {
-                    resultSet.add((Value)this.values[i]);
+                    resultSet.add((Key)this.keys[i], (Value)this.values[i]);
                 }
             }
         }
@@ -633,7 +707,7 @@ class ExternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
             for (int i = 0; i < this.size; ++i) {
                 if (left.compareTo((Key)this.keys[i]) < 0
                     && right.compareTo((Key)this.keys[i]) >= 0) {
-                    resultSet.add((Value)this.values[i]);
+                    resultSet.add((Key)this.keys[i], (Value)this.values[i]);
                 }
             }
         }
@@ -641,15 +715,15 @@ class ExternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
             for (int i = 0; i < this.size; ++i) {
                 if (left.compareTo((Key)this.keys[i]) < 0
                     && right.compareTo((Key)this.keys[i]) > 0) {
-                    resultSet.add((Value)this.values[i]);
+                    resultSet.add((Key)this.keys[i], (Value)this.values[i]);
                 }
             }
         }
         
         if (right.compareTo((Key)this.keys[this.size - 1]) >= 0 
             && this.brother != null) {
-            this.brother.collect(resultSet, left, isLeftInclusive, right, 
-                                 isRightInclusive);
+            this.brother.collectIfBetween(resultSet, left, isLeftInclusive, right, 
+                                 		  isRightInclusive);
         }
     }
 
@@ -817,7 +891,7 @@ class ExternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
 		int succPointer = 0;
 		for (; succPointer < node.size; ++predPointer, ++succPointer) {
 			this.keys[predPointer] = node.keys[succPointer];
-			this.values[predPointer] = node.keys[succPointer];
+			this.values[predPointer] = node.values[succPointer];
 			++this.size;
 		}
 		
@@ -874,5 +948,69 @@ class ExternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
 		this.values[this.size - 1] = null;
 		
 		--this.size;
+	}
+
+	@Override
+	protected void collectIfLarger(ResultSet<Key, Value> resultSet, Key left, 
+			                       boolean isLeftInclusive) {
+		
+        if (isLeftInclusive) {
+            for (int i = 0; i < this.size; ++i) {
+                if (left.compareTo((Key)this.keys[i]) <= 0) {
+                    resultSet.add((Key)this.keys[i], (Value)this.values[i]);
+                }
+            }
+        }
+        else {
+        	for (int i = 0; i < this.size; ++i) {
+                if (left.compareTo((Key)this.keys[i]) < 0) {
+                    resultSet.add((Key)this.keys[i], (Value)this.values[i]);
+                }
+            }
+        }
+        
+        if (this.brother != null) {
+            this.brother.collectIfLarger(resultSet, left, isLeftInclusive);
+        }	
+	}
+
+	@Override
+	protected void collectIfSmaller(ResultSet<Key, Value> resultSet, Key right, 
+			                        boolean isRightInclusive, Key min) {
+		
+        if (isRightInclusive) {
+            for (int i = 0; i < this.size; ++i) {
+                if (right.compareTo((Key)this.keys[i]) >= 0) {
+                    resultSet.add((Key)this.keys[i], (Value)this.values[i]);
+                }
+            }
+        }
+        else {
+            for (int i = 0; i < this.size; ++i) {
+                if (right.compareTo((Key)this.keys[i]) > 0) {
+                    resultSet.add((Key)this.keys[i], (Value)this.values[i]);
+                }
+            }
+        }
+        
+        if (right.compareTo((Key)this.keys[this.size - 1]) >= 0 
+            && this.brother != null) {
+            this.brother.collectIfSmaller(resultSet, right, isRightInclusive, min);
+        }
+		
+	}
+
+	@Override
+	protected void collectIfNotEqual(ResultSet<Key, Value> resultSet, Key key, Key min) {
+		
+		for (int i = 0; i < this.size; ++i) {
+            if (key.compareTo((Key)this.keys[i]) != 0) {
+                resultSet.add((Key)this.keys[i], (Value)this.values[i]);
+            }
+        }
+		
+		if (this.brother != null) {
+            this.brother.collectIfNotEqual(resultSet, key, min);
+        }	
 	}
 }
