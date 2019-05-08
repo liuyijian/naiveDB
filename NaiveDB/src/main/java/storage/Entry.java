@@ -14,6 +14,7 @@ public class Entry<Key extends Comparable<Key>, Value> {
 	
 	@Override
 	public String toString() {
+		
 		return "<" + this.key.toString() + ", " + this.value.toString() + ">";
 	}
 }

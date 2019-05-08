@@ -35,6 +35,7 @@ public class ResultSet<Key extends Comparable<Key>, Value> {
 	
 	@Override
 	public String toString() {
+		
 		return this.result.toString();
 	}
 }

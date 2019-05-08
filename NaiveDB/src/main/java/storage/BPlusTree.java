@@ -42,12 +42,13 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
         return this.root.findNotEqual(key, this.minKey);
     } 
     
-    public void insert(Key key, Value value) {
+    // return true when succeed
+    public boolean insert(Key key, Value value) {
     	
     	ResultSet<Key, Value> resultSet = this.find(key);
     	if (!resultSet.isEmpty()) {
     		// key should be unique
-    		return;
+    		return false;
     	}
     	
     	if (this.minKey == null || key.compareTo(this.minKey) < 0) {
@@ -59,9 +60,10 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
     		this.root = newRootOrNull;
     	}
     	++this.size;
+    	return true;
     }
     
-    public void delete(Key key) {
+    public ResultSet<Key, Value> delete(Key key) {
     	
     	ResultSet<Key, Value> resultSet = this.find(key);
     	for (Entry<Key, Value> entry: resultSet.getResultSet()) {
@@ -69,10 +71,11 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
     	}
     	
     	this.size -= resultSet.size();
+    	return resultSet;
     }
     
-    public void deleteBetween(Key left, boolean isLeftInclusive, Key right, 
-    		                  boolean isRightInclusive) {
+    public ResultSet<Key, Value> deleteBetween(Key left, boolean isLeftInclusive, 
+    		                                   Key right, boolean isRightInclusive) {
     	
     	ResultSet<Key, Value> resultSet = this.findBetween(left, isLeftInclusive, 
     			                                           right, isRightInclusive);
@@ -81,9 +84,10 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
     	}
     	
     	this.size -= resultSet.size();
+    	return resultSet;
     }
 
-    public void deleteLarger(Key left, boolean isLeftInclusive) {
+    public ResultSet<Key, Value> deleteLarger(Key left, boolean isLeftInclusive) {
     	
     	ResultSet<Key, Value> resultSet = this.findLarger(left, isLeftInclusive);
     	for (Entry<Key, Value> entry: resultSet.getResultSet()) {
@@ -91,9 +95,10 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
 		}
 
     	this.size -= resultSet.size();
+    	return resultSet;
     }
 
-    public void deleteSmaller(Key right, boolean isRightInclusive) {
+    public ResultSet<Key, Value> deleteSmaller(Key right, boolean isRightInclusive) {
 	
     	ResultSet<Key, Value> resultSet = this.findSmaller(right, isRightInclusive);
     	for (Entry<Key, Value> entry: resultSet.getResultSet()) {
@@ -101,9 +106,10 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
 		}
 
     	this.size -= resultSet.size();
+    	return resultSet;
     }
 
-    public void deleteNotEqual(Key key) {
+    public ResultSet<Key, Value> deleteNotEqual(Key key) {
     	
     	ResultSet<Key, Value> resultSet = this.findNotEqual(key);
     	for (Entry<Key, Value> entry: resultSet.getResultSet()) {
@@ -111,6 +117,7 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
 		}
 
     	this.size -= resultSet.size();
+    	return resultSet;
     }
     
     protected void deleteSingle(Key key) {
