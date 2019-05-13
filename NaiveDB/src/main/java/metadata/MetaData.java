@@ -84,12 +84,13 @@ public class MetaData  {
 
     public String showDatabases() {
         // 展示所有数据库，用于配合命令 SHOW DATABASES;
-        String str = "";
-        for(int i = 0; i < databasesList.length(); i++) {
-            str += databasesList.getString(i);
-            str += '\n';
-        }
-        return str.substring(0, str.length()-1);
+        return databasesList.toString();
+//        String str = "";
+//        for(int i = 0; i < databasesList.length(); i++) {
+//            str += databasesList.getString(i);
+//            str += '\n';
+//        }
+//        return str.substring(0, str.length()-1);
     }
 
     public String showDatabaseTables(String database){
@@ -250,12 +251,13 @@ class MetaJson {
    }
 
    public String getTableList(){
-        String str = "";
-        for(String table: singleMetaJsonObject.keySet()){
-           str += table;
-           str += '\n';
-       }
-        return "tables of "+ database+":\n" + str.substring(0, str.length()-1);
+        return database + " : "+singleMetaJsonObject.keySet().toString();
+//        String str = "";
+//        for(String table: singleMetaJsonObject.keySet()){
+//           str += table;
+//           str += '\n';
+//       }
+//        return "tables of "+ database+":\n" + str.substring(0, str.length()-1);
    }
 
    public String createTable(String tableName, JSONObject tableInfo){
