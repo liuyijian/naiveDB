@@ -52,35 +52,15 @@ databases
 
 ```json
 {
-    "table1":{
-        "columns":{
-            "ID":{
-                "TYPE":"INT",
-                "NOT_NULL":true
-            },
-            "NAME":{
-                "TYPE":"STRING",
-                "MAX":20,
-                "NOT_NULL":true
-            }
-         },
-        "primary_key":"ID"
-    },
-    "table2":{
-        "columns":{
-            "ID":{
-                "TYPE":"INT",
-                "NOT_NULL":true
-            },
-            "MARK":{
-                "TYPE":"DOUBLE",
-                "MAX":20,
-                "NOT_NULL":true
-            }
-         },
-        "primary_key":"ID"
-    }
-
+	"person":{
+		"types":[7,3],
+		"filepath":"databases/database1/person.db",
+		"offsets":[512,4],
+		"pktypes":[3],
+		"notnull":[true,true],
+		"pkattrs":["ID"],
+		"attrs":["name","ID"]
+	}
 }
 ```
 

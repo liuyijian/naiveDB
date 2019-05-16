@@ -1,6 +1,8 @@
 package sqlparser;
 
 
+
+import metadata.MetaJson;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.JSQLParserException;
@@ -14,11 +16,38 @@ import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.update.Update;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
+import org.json.JSONObject;
+
+import metadata.MetaData;
+import metadata.TableInfo;
+
+import storage.Storage;
+import storage.Type;
 
 
 public class SQLParser {
+
+
+    public MetaData metaData;
+
+    // 初始化函数
+    public SQLParser(){
+        try{
+            metaData = new MetaData();
+            // 这里三行定义这些仅用于测试方便,实际使用时去掉
+            metaData.currentDatabase = "database1";
+            metaData.currentUser = "admin";
+            metaData.metaJson = new MetaJson("database1");
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+    }
 
     // 统一入口
     public List<String> dealer(String sqls){
@@ -61,31 +90,85 @@ public class SQLParser {
     public String createTableParser(CreateTable stmt){
         // 范例语句的输出 "CREATE TABLE person (name String(256), ID Int not null, PRIMARY KEY(ID))"
         // [name String (256), ID Int not null]
-        System.out.println(stmt.getColumnDefinitions());
-        List<ColumnDefinition> columnDefinitionList = stmt.getColumnDefinitions();
-        for(ColumnDefinition columnDefinition:columnDefinitionList){
-            System.out.println(columnDefinition.getColumnName());
-            System.out.println(columnDefinition.getColDataType());
+        List<String> indexes = stmt.getIndexes().get(0).getColumnsNames();
+        String tableName = stmt.getTable().getName();
+        TableInfo tableInfo = new TableInfo();
+
+        tableInfo.filepath  = metaData.metaJson.dbpath + "/" + tableName + ".db";
+
+        for(ColumnDefinition columnDefinition : stmt.getColumnDefinitions()){
+            String attrtype = columnDefinition.getColDataType().getDataType().toUpperCase();
+            String attrname = columnDefinition.getColumnName();
+            tableInfo.attrs.add(attrname);
+            if(indexes.contains(attrname)){
+                tableInfo.pkattrs.add(attrname);
+                tableInfo.pktypes.add(Type.TYPE_MAP.get(attrtype));
+            }
+            tableInfo.types.add(Type.TYPE_MAP.get(attrtype));
+            if(Type.TYPE_MAP.get(attrtype) == Type.TYPE_STRING){
+                tableInfo.offsets.add(2 * Integer.valueOf(columnDefinition.getColDataType().getArgumentsStringList().get(0)));
+            } else {
+                tableInfo.offsets.add(Type.OFFSET_MAP.get(attrtype));
+            }
             // 注意这里解析到的有点问题，没有就是null，加了not null 关键词，会解析出 [not,null]
-            System.out.println(columnDefinition.getColumnSpecStrings());
+            if(columnDefinition.getColumnSpecStrings() == null){
+                tableInfo.notnull.add(false);
+            } else{
+                tableInfo.notnull.add(true);
+            }
         }
 
-        // [PRIMARY KEY (ID)]
-        System.out.println(stmt.getIndexes());
-        // person
-        System.out.println(stmt.getTable());
-        return "success";
+        System.out.println(tableInfo.types);
+        System.out.println(tableInfo.attrs);
+        System.out.println(tableInfo.offsets);
+        System.out.println(tableInfo.pktypes);
+        System.out.println(tableInfo.pkattrs);
+        System.out.println(tableInfo.notnull);
+
+        if (metaData.metaJson.hasTable(tableName)){
+            ;
+        } else {
+            // 之后自动删除此资源
+//            try(
+//                    Storage storage = new Storage(
+//                            Storage.CONSTRUCT_FROM_NEW_DB,
+//                            tableInfo.filepath,
+//                            tableInfo.types,
+//                            tableInfo.attrs,
+//                            tableInfo.pktypes,
+//                            tableInfo.pkattrs,
+//                            tableInfo.offsets,
+//                            tableInfo.notnull
+//                    )
+//
+//            try {
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("filepath", tableInfo.filepath);
+                jsonObject.put("types", tableInfo.types);
+                jsonObject.put("attrs", tableInfo.attrs);
+                jsonObject.put("offsets", tableInfo.offsets);
+                jsonObject.put("pktypes", tableInfo.pktypes);
+                jsonObject.put("pkattrs", tableInfo.pkattrs);
+                jsonObject.put("notnull", tableInfo.notnull);
+                metaData.metaJson.createTable(tableName, jsonObject);
+                return "table " + tableName + " successfully created";
+//            }
+//            catch (IOException e){
+//                e.printStackTrace();
+//            }
+        }
+        return "cannot create a existed table " + tableName;
     }
 
     public String dropParser(Drop stmt){
-        // 范例语句的输出 "DROP TABLE person"
-        // person
-        System.out.println(stmt.getName());
-        // null
-        System.out.println(stmt.getParameters());
-        // TABLE
-        System.out.println(stmt.getType());
-        return "success";
+        // 此处不接受drop database
+        String table = stmt.getName().getName();
+        String type = stmt.getType().toUpperCase();
+        if(type.equals("TABLE")){
+            return metaData.metaJson.dropTable(table);
+        } else {
+            return "haha";
+        }
     }
 
     public String selectParser(Select stmt){
@@ -166,14 +249,14 @@ public class SQLParser {
 
         SQLParser sqlParser = new SQLParser();
 
-        sqlParser.dealer("CREATE TABLE person (name String(256), ID Int not null, PRIMARY KEY(ID))");
-        sqlParser.dealer("DROP TABLE person");
-        sqlParser.dealer("select name,ID from person where ID > 5");
-        sqlParser.dealer("select table1.ID, table2.name from table1 join table2 on table1.ID=table2.ID where table1.ID <= 3");
-        sqlParser.dealer("INSERT INTO person VALUES ('Bob', 15);");
-        sqlParser.dealer("INSERT INTO person(name) VALUES ('Bob');");
-        sqlParser.dealer("UPDATE  person  SET  gender = 'male'  WHERE  name = 'Ben'");
-        sqlParser.dealer("DELETE FROM person WHERE name = 'Bob'");
+        sqlParser.dealer("CREATE TABLE person (name String(256) not null, ID Int not null, PRIMARY KEY(ID))");
+//        sqlParser.dealer("DROP TABLE table1");
+//        sqlParser.dealer("select name,ID from person where ID > 5");
+//        sqlParser.dealer("select table1.ID, table2.name from table1 join table2 on table1.ID=table2.ID where table1.ID <= 3");
+//        sqlParser.dealer("INSERT INTO person VALUES ('Bob', 15);");
+//        sqlParser.dealer("INSERT INTO person(name) VALUES ('Bob');");
+//        sqlParser.dealer("UPDATE  person  SET  gender = 'male'  WHERE  name = 'Ben'");
+//        sqlParser.dealer("DELETE FROM person WHERE name = 'Bob'");
 
     }
 }
