@@ -16,6 +16,7 @@ public class Type {
     public static final Integer OFFSET_DOUBLE = 8;
 
     public static final Map <String,Integer> TYPE_MAP = new HashMap<String,Integer>() {{
+
         put("int", TYPE_INT);
         put("long", TYPE_LONG);
         put("float", TYPE_FLOAT);
@@ -29,6 +30,7 @@ public class Type {
     }};
 
     public static final Map<String, Integer> OFFSET_MAP = new HashMap<String, Integer>() {{
+
         put("int", OFFSET_INT);
         put("long", OFFSET_LONG);
         put("float", OFFSET_FLOAT);

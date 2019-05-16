@@ -15,8 +15,8 @@ public class Storage {
 	protected static final Integer INITIAL_NUMBER_OF_ROW = 100;
 	protected static final Integer BPLUSTREE_ORDER = 10;
 
-	protected static final Integer CONSTRUCT_FROM_EXISTED_DB = 1;
-	protected static final Integer CONSTRUCT_FROM_NEW_DB     = 2;
+	public static final Integer CONSTRUCT_FROM_EXISTED_DB = 1;
+	public static final Integer CONSTRUCT_FROM_NEW_DB     = 2;
 	
 	protected String           fileName;
 	protected RandomAccessFile file;

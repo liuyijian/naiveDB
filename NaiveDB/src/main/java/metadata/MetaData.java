@@ -3,14 +3,21 @@ package metadata;
 import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
+import java.util.Vector;
+
 import org.json.JSONObject;
 import org.json.JSONArray;
+import util.CustomerException;
+import storage.Type;
+
 
 public class MetaData  {
 
     public static final String DATABASES_DIR = "databases";
     public static final String WHOLE_META_FILENAME = "auth.json";
     public static final String SINGLE_META_FILENAME = "meta.json";
+    public static final String DB_NAME = "test.db";
+    public static final int WRITEBACK_INTERVAL =  5;
 
     public JSONObject wholeMetaJsonObject;
     public JSONArray usersList;
@@ -35,6 +42,18 @@ public class MetaData  {
         currentUser = null;
         currentDatabase = null;
         metaJson = null;
+    }
+
+    public String getCurrentUser(){
+        return currentUser;
+    }
+
+    public String getCurrentDatabase(){
+        return currentDatabase;
+    }
+
+    public int getWritebackInterval(){
+        return WRITEBACK_INTERVAL;
     }
 
     public boolean existsUser(String username) {
@@ -84,12 +103,13 @@ public class MetaData  {
 
     public String showDatabases() {
         // 展示所有数据库，用于配合命令 SHOW DATABASES;
-        String str = "";
-        for(int i = 0; i < databasesList.length(); i++) {
-            str += databasesList.getString(i);
-            str += '\n';
-        }
-        return str.substring(0, str.length()-1);
+        return databasesList.toString();
+//        String str = "";
+//        for(int i = 0; i < databasesList.length(); i++) {
+//            str += databasesList.getString(i);
+//            str += '\n';
+//        }
+//        return str.substring(0, str.length()-1);
     }
 
     public String showDatabaseTables(String database){
@@ -195,84 +215,38 @@ public class MetaData  {
             return;
         }
 
-        System.out.println(metaData.login("user_unknown", ""));
-        System.out.println(metaData.login("admin","wrong"));
+//        System.out.println(metaData.login("user_unknown", ""));
+//        System.out.println(metaData.login("admin","wrong"));
         System.out.println(metaData.login("admin","123456"));
-        System.out.println(metaData.showDatabases());
+//        System.out.println(metaData.showDatabases());
 
-        System.out.println(metaData.showDatabaseTables("not_exist_database"));
-        System.out.println(metaData.switchDatabase("not_exist_database"));
-        System.out.println(metaData.switchDatabase("database1"));
-        System.out.println(metaData.createDatabase("database_new"));
-        System.out.println(metaData.showDatabases());
-        System.out.println(metaData.switchDatabase("database_new"));
-        System.out.println(metaData.dropDatabase("database_new"));
-        // 此句应该失败，因为此时没有数据库被选中
-        System.out.println(metaData.createTable("table1",new JSONObject("{}")));
-        System.out.println(metaData.switchDatabase("database1"));
-        System.out.println(metaData.showDatabaseTables("database1"));
-        // 此句应该失败，因为表已经存在
-        System.out.println(metaData.createTable("table1",new JSONObject("{}")));
+//        System.out.println(metaData.showDatabaseTables("not_exist_database"));
+//        System.out.println(metaData.switchDatabase("not_exist_database"));
 
-        System.out.println(metaData.createTable("table_new",new JSONObject("{}")));
-        System.out.println(metaData.showDatabaseTables("database1"));
-        System.out.println(metaData.dropTable("table_new"));
-        System.out.println(metaData.showDatabaseTables("database1"));
+        System.out.println(metaData.switchDatabase("database1"));
+        System.out.println(metaData.metaJson.getAttributesType("person"));
+        System.out.println(metaData.metaJson.getAttributesName("person"));
+        System.out.println(metaData.metaJson.getAttributesPKType("person"));
+        System.out.println(metaData.metaJson.getAttributesPKName("person"));
+        System.out.println(metaData.metaJson.getAttributesNotNull("person"));
+        System.out.println(metaData.metaJson.getAttributesOffset("person"));
+
+//        System.out.println(metaData.createDatabase("database_new"));
+//        System.out.println(metaData.showDatabases());
+//        System.out.println(metaData.switchDatabase("database_new"));
+//        System.out.println(metaData.dropDatabase("database_new"));
+//        // 此句应该失败，因为此时没有数据库被选中
+//        System.out.println(metaData.createTable("table1",new JSONObject("{}")));
+//        System.out.println(metaData.switchDatabase("database1"));
+//        System.out.println(metaData.showDatabaseTables("database1"));
+//        // 此句应该失败，因为表已经存在
+//        System.out.println(metaData.createTable("table1",new JSONObject("{}")));
+//
+//        System.out.println(metaData.createTable("table_new",new JSONObject("{}")));
+//        System.out.println(metaData.showDatabaseTables("database1"));
+//        System.out.println(metaData.dropTable("table_new"));
+//        System.out.println(metaData.showDatabaseTables("database1"));
     }
 
 }
 
-class MetaJson {
-
-    public String database;
-    public String path;
-    public JSONObject singleMetaJsonObject;
-
-
-    public MetaJson(String database){
-        this.database = database;
-        this.path = MetaData.DATABASES_DIR+"/"+this.database+"/"+MetaData.SINGLE_META_FILENAME;
-        try{
-            this.singleMetaJsonObject = new JSONObject(FileUtils.readFileToString(new File(this.path),"UTF-8"));
-        } catch (Exception e){
-            this.singleMetaJsonObject = new JSONObject("{}");
-            System.out.println("could not load single_meta_json file and create one");
-        }
-    }
-
-   public void writeBack(){
-        try{
-            FileUtils.writeStringToFile(new File(path), singleMetaJsonObject.toString(), "UTF-8");
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-   }
-
-   public String getTableList(){
-        String str = "";
-        for(String table: singleMetaJsonObject.keySet()){
-           str += table;
-           str += '\n';
-       }
-        return "tables of "+ database+":\n" + str.substring(0, str.length()-1);
-   }
-
-   public String createTable(String tableName, JSONObject tableInfo){
-        if (! singleMetaJsonObject.has(tableName)){
-            singleMetaJsonObject.put(tableName,tableInfo);
-            writeBack();
-            return String.format("have created table: %s",tableName);
-        }
-        return String.format("cannot create an already-existed table: %s",tableName);
-   }
-
-   public String dropTable(String tableName){
-       if (singleMetaJsonObject.has(tableName)){
-           singleMetaJsonObject.remove(tableName);
-           writeBack();
-           return String.format("have dropped table: %s",tableName);
-       }
-       return String.format("cannot drop a non-exist table: %s",tableName);
-   }
-}

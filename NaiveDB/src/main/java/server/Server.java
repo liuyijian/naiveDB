@@ -1,6 +1,7 @@
 package server;
 
 import metadata.MetaData;
+import sqlparser.SQLParser;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -22,21 +23,13 @@ public class Server {
     // （可选）维护一个客户端连接的socket列表，如果要做的话，记得客户退出后，把列表更新
     // List<Socket> socketList;
 
-    // 加载一个MetaData类的对象
-    public MetaData metaData;
+    public SQLParser sqlParser;
 
     //初始化服务器
     public void init() {
         // 出错的话会自动回收socket
-
-        // 加载元数据
-        try{
-            metaData = new MetaData();
-        } catch (IOException e){
-           System.out.println("cannot find metadata file");
-           return;
-        }
-
+        // 初始化一个parser类并加载元数据
+        sqlParser = new SQLParser();
         // 监听连接
         try(ServerSocket serverSocket = new ServerSocket(PORT)) {
             System.out.println("naiveDB server is running!");
@@ -76,7 +69,7 @@ public class Server {
                     String inputStr = input.readUTF();
                     System.out.println("客户端发来数据是：\n" + inputStr);
                     //向客户端发送数据，为调用SQLParser类的犯法处理输入后返回的结果
-                    String outputStr = inputStr;
+                    String outputStr = sqlParser.dealer(inputStr).toString();
                     out.writeUTF(outputStr);
                 }
             } catch (IOException e) {

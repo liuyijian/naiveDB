@@ -52,35 +52,15 @@ databases
 
 ```json
 {
-    "table1":{
-        "columns":{
-            "ID":{
-                "TYPE":"INT",
-                "NOT_NULL":true
-            },
-            "NAME":{
-                "TYPE":"STRING",
-                "MAX":20,
-                "NOT_NULL":true
-            }
-         },
-        "primary_key":"ID"
-    },
-    "table2":{
-        "columns":{
-            "ID":{
-                "TYPE":"INT",
-                "NOT_NULL":true
-            },
-            "MARK":{
-                "TYPE":"DOUBLE",
-                "MAX":20,
-                "NOT_NULL":true
-            }
-         },
-        "primary_key":"ID"
-    }
-
+	"person":{
+		"types":[7,3],
+		"filepath":"databases/database1/person.db",
+		"offsets":[512,4],
+		"pktypes":[3],
+		"notnull":[true,true],
+		"pkattrs":["ID"],
+		"attrs":["name","ID"]
+	}
 }
 ```
 
@@ -104,5 +84,8 @@ databases
 #### 参考
 * [读取json文件](https://www.cnblogs.com/geek1116/p/7413619.html)
 * [漂亮的JSON显示](https://www.json.cn)
+* [commons-io api](http://commons.apache.org/proper/commons-io/javadocs/api-2.6/index.html)
+* [org.json](https://www.cnblogs.com/geek1116/p/7413619.html)
+* [json与java对象的转换](https://blog.csdn.net/qq_37918817/article/details/80740638)
 
 
