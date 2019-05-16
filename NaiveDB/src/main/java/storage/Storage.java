@@ -7,6 +7,8 @@ import java.io.RandomAccessFile;
 import java.util.Stack;
 import java.util.Vector;
 
+import util.CustomerException;
+
 
 public class Storage {
 
@@ -16,12 +18,6 @@ public class Storage {
 	protected static final Integer CONSTRUCT_FROM_EXISTED_DB = 1;
 	protected static final Integer CONSTRUCT_FROM_NEW_DB     = 2;
 	
-	protected static final Integer TYPE_INT    = 3;
-	protected static final Integer TYPE_LONG   = 4;
-	protected static final Integer TYPE_FLOAT  = 5;
-	protected static final Integer TYPE_DOUBLE = 6;
-	protected static final Integer TYPE_STRING = 7;
-
 	protected String           fileName;
 	protected RandomAccessFile file;
 	
@@ -30,19 +26,21 @@ public class Storage {
 	protected Vector<Integer>  offsetsInRow;
 	protected Integer          offset;
 	
+	protected Vector<Boolean>  notNull;
 	protected Vector<Integer>  types;
 	protected Vector<String>   attrs;
-	protected Integer          pkType;
-	protected String           pkAttr;
-	protected Integer          pkIndex;
+	protected Vector<Integer>  pkTypes;
+	protected Vector<String>   pkAttrs;
+	protected Vector<Integer>  pkIndexes;
 	
 	protected Vector<Row>      data;
 	protected Stack<Integer>   availableRows;
-	protected BPlusTree        index;
+	protected BPlusTree<PrimaryKey, Row> index;
 	
     public Storage(Integer mode, String fileName, Vector<Integer> types, 
-    		       Vector<String> attrs, Vector<Integer> offsetsInRow, 
-    		       Integer pkType, String pkAttr) throws IOException {
+    		       Vector<String> attrs, Vector<Integer> pkTypes, 
+    		       Vector<String> pkAttrs, Vector<Integer> offsetsInRow, 
+    		       Vector<Boolean> notNull) throws IOException {
 		
 		this.numberOfCol = attrs.size();
 		this.offsetsInRow = offsetsInRow;
@@ -50,18 +48,22 @@ public class Storage {
 		for (Integer off : offsetsInRow) {
 			this.offset += off;
 		}
+		this.offset += this.numberOfCol; // extra bytes for recording isNull-signs 
 
 		this.types = types;
 		this.attrs = attrs;
-		this.pkType = pkType;
-		this.pkAttr = pkAttr;
-		this.pkIndex = -1;
+		this.pkTypes = pkTypes;
+		this.pkAttrs = pkAttrs;
+		this.pkIndexes = new Vector<Integer>();
 		for (int i = 0; i < this.numberOfCol; ++i) {
-			if (this.attrs.get(i).equals(this.pkAttr)) {
-				this.pkIndex = i;
-				break;
+			for (int j = 0; j < this.pkAttrs.size(); ++j) {
+				if (this.attrs.get(i).equals(this.pkAttrs.get(j))) {
+					this.pkIndexes.add(i);
+					break;
+				}
 			}
 		}
+		this.notNull = notNull;
 		
 		this.fileName = fileName;
 		this.file = new RandomAccessFile(fileName, "rw");
@@ -74,32 +76,56 @@ public class Storage {
 			for (int i = 0; i < INITIAL_NUMBER_OF_ROW; ++i) {
 				this.initFileRow();
 			}
+			
 			for (int i = 0; i < INITIAL_NUMBER_OF_ROW; ++i) {
 				this.data.add(new Row(this, i));
 			}
+			
 			for (int i = INITIAL_NUMBER_OF_ROW - 1; 0 <= i; --i) {
 				this.availableRows.add(i);
 			}
 			this.initBPlusTree(CONSTRUCT_FROM_NEW_DB);
-			
+						
 		} else if (mode == CONSTRUCT_FROM_EXISTED_DB) {
 			
 	    	this.numberOfRow = (int) (this.file.length() / this.offset);
 	    	for (int i = 0; i < this.numberOfRow; ++i) {
 				this.data.add(new Row(this, i));
 			}
+	    	
 	    	for (int i = this.numberOfRow - 1; 0 <= i; --i) {
-	    		if (this.data.get(i).isAvailable) {
+	    		if (this.data.get(i).isAvailableForNewRow()) {
 					this.availableRows.add(i);
 	    		}
 			}
+
 			this.initBPlusTree(CONSTRUCT_FROM_EXISTED_DB);
 		}
 	}
     
+    public void save() throws IOException {
+    	
+    	for (int i = 0; i < this.numberOfRow; ++i) {
+    		this.data.get(i).writeToFile();
+    	}
+    }
+    
+    public void checkNull(Vector<Object> data) {
+    	
+    	for (int i = 0; i < this.numberOfCol; ++i) {
+    		
+    		if (data.get(i).equals(null) && this.notNull.get(i)) {
+    			throw new CustomerException("Storage", "checkNull(): " + this.attrs.get(i) + "can not be null!");
+    		}
+    	}
+    }
+    
 	public void insert(Vector<Object> data) throws IOException {
 	
-		Object pk = data.get(this.pkIndex);
+		checkNull(data);
+		
+		// throw when pks in data contain null value
+		PrimaryKey pk = new PrimaryKey(this.pkTypes, data, this.pkIndexes);
 		
 		if (this.availableRows.isEmpty()) {
 						
@@ -120,11 +146,10 @@ public class Storage {
 		} 
 
 		Integer order = this.availableRows.pop();
-		Row row = new Row(this, order);
+		Row row = this.data.get(order);
 		row.update(data);
-		this.data.set(order, row);
 		
-		boolean isSuccessful = this.index.insert((Comparable) pk, row);
+		boolean isSuccessful = this.index.insert(pk, row);
 		if (! isSuccessful) {
 			
 			row.delete();
@@ -132,68 +157,72 @@ public class Storage {
 		}
 	}
     
-    public void delete(Comparable key) throws IOException {
+    public void delete(PrimaryKey key) throws IOException {
     	
-    	ResultSet resultSet = this.index.delete(key);
-    	Vector<Entry> entries = resultSet.getResultSet();
+    	ResultSet<PrimaryKey, Row> resultSet = this.index.delete(key);
+    	Vector<Entry<PrimaryKey, Row>> entries = resultSet.getResultSet();
     	
-    	for (Entry entry : entries) {
+    	for (Entry<PrimaryKey, Row> entry : entries) {
     		
-    		((Row) entry.value).delete();
-    		this.availableRows.add(((Row) entry.value).order);
+    		entry.value.delete();
+    		this.availableRows.add(entry.value.order);
     	}
     }
     
-    public void deleteBetween(Comparable left, boolean isLeftInclusive, 
-    		                  Comparable right, boolean isRightInclusive) 
+    public void deleteBetween(PrimaryKey left, boolean isLeftInclusive, 
+    						  PrimaryKey right, boolean isRightInclusive) 
     		                  throws IOException {
     	
-    	ResultSet resultSet = this.index.deleteBetween(left, isLeftInclusive, right, 
-    			                                       isRightInclusive);
-    	Vector<Entry> entries = resultSet.getResultSet();
+    	ResultSet<PrimaryKey, Row> resultSet = this.index.deleteBetween(left, 
+    			                                                        isLeftInclusive, 
+    			                                                        right, 
+    			                                                        isRightInclusive);
+    	Vector<Entry<PrimaryKey, Row>> entries = resultSet.getResultSet();
     	
-    	for (Entry entry : entries) {
+    	for (Entry<PrimaryKey, Row> entry : entries) {
     		
-    		((Row) entry.value).delete();
-    		this.availableRows.add(((Row) entry.value).order);
+    		entry.value.delete();
+    		this.availableRows.add(entry.value.order);
     	}
     }
 
-    public void deleteLarger(Comparable left, boolean isLeftInclusive) 
+    public void deleteLarger(PrimaryKey left, boolean isLeftInclusive) 
     		                 throws IOException {
     	
-    	ResultSet resultSet = this.index.deleteLarger(left, isLeftInclusive);
-		Vector<Entry> entries = resultSet.getResultSet();
+    	ResultSet<PrimaryKey, Row> resultSet = this.index.deleteLarger(left, 
+    			   													   isLeftInclusive);
+		Vector<Entry<PrimaryKey, Row>> entries = resultSet.getResultSet();
 		
-		for (Entry entry : entries) {
+		for (Entry<PrimaryKey, Row> entry : entries) {
 		
-		((Row) entry.value).delete();
-			this.availableRows.add(((Row) entry.value).order);
+			entry.value.delete();
+			this.availableRows.add(entry.value.order);
 		}
     }
 
-    public void deleteSmaller(Comparable right, boolean isRightInclusive) 
+    public void deleteSmaller(PrimaryKey right, boolean isRightInclusive) 
     		                  throws IOException {
 	
-    	ResultSet resultSet = this.index.deleteSmaller(right, isRightInclusive);
-		Vector<Entry> entries = resultSet.getResultSet();
+    	ResultSet<PrimaryKey, Row> resultSet = this.index.deleteSmaller(right, 
+    			 														isRightInclusive);
+		Vector<Entry<PrimaryKey, Row>> entries = resultSet.getResultSet();
 		
-		for (Entry entry : entries) {
+		for (Entry<PrimaryKey, Row> entry : entries) {
 		
-			((Row) entry.value).delete();
-			this.availableRows.add(((Row) entry.value).order);
+			entry.value.delete();
+			this.availableRows.add(entry.value.order);
 		}
     }
 
-    public void deleteNotEqual(Comparable key) throws IOException {
+    public void deleteNotEqual(PrimaryKey key) throws IOException {
     	
-    	ResultSet resultSet = this.index.deleteNotEqual(key);
-		Vector<Entry> entries = resultSet.getResultSet();
+    	ResultSet<PrimaryKey, Row> resultSet = this.index.deleteNotEqual(key);
+		Vector<Entry<PrimaryKey, Row>> entries = resultSet.getResultSet();
 		
-		for (Entry entry : entries) {
+		for (Entry<PrimaryKey, Row> entry : entries) {
 		
-			((Row) entry.value).delete();
-			this.availableRows.add(((Row) entry.value).order);
+			entry.value.delete();
+			this.availableRows.add(entry.value.order);
 		}
     }
 	
@@ -203,42 +232,33 @@ public class Storage {
     	
     	for (int i = 0; i < this.numberOfCol; ++i) {
     		
-    		if (this.types.get(i) == TYPE_INT) {
+    		if (this.types.get(i) == Type.TYPE_INT) {
     			this.file.writeInt(0);
     		}
-    		else if (this.types.get(i) == TYPE_LONG) {
+    		else if (this.types.get(i) == Type.TYPE_LONG) {
     			this.file.writeLong(0);
     		}
-    		else if (this.types.get(i) == TYPE_FLOAT) {
+    		else if (this.types.get(i) == Type.TYPE_FLOAT) {
     			this.file.writeFloat(0);
     		}
-    		else if (this.types.get(i) == TYPE_DOUBLE) {
+    		else if (this.types.get(i) == Type.TYPE_DOUBLE) {
     			this.file.writeDouble(0);
     		}
-    		else if (this.types.get(i) == TYPE_STRING) {
+    		else if (this.types.get(i) == Type.TYPE_STRING) {
     			writeFixedString("", this.offsetsInRow.get(i) / 2, this.file);
     		}
        	}
+    	
+    	// init all sign bytes with null = true  
+    	for (int i = 0; i < this.numberOfCol; ++i) {
+    		this.file.writeBoolean(true);
+    	}
     }
     
-    protected void initBPlusTree(Integer mode) {
+    protected void initBPlusTree(Integer mode) throws IOException {
 
-    	if (this.pkType == TYPE_INT) {
-			this.index = new BPlusTree<Integer, Row>(BPLUSTREE_ORDER);
-		}
-		else if (this.pkType == TYPE_LONG) {
-			this.index = new BPlusTree<Long, Row>(BPLUSTREE_ORDER);
-		}
-		else if (this.pkType == TYPE_FLOAT) {
-			this.index = new BPlusTree<Float, Row>(BPLUSTREE_ORDER);
-		}
-		else if (this.pkType == TYPE_DOUBLE) {
-			this.index = new BPlusTree<Double, Row>(BPLUSTREE_ORDER);
-		}
-		else if (this.pkType == TYPE_STRING) {
-			this.index = new BPlusTree<String, Row>(BPLUSTREE_ORDER);
-		}
-
+    	this.index = new BPlusTree<PrimaryKey, Row>(BPLUSTREE_ORDER);
+    	
     	if (mode == CONSTRUCT_FROM_NEW_DB) {
     		;
     	}
@@ -247,9 +267,10 @@ public class Storage {
     		for (int i = 0; i < this.numberOfRow; ++i) {
     			
     			Row row = this.data.get(i);
+    			row.readFromFile();
     			
-    			if (! row.isAvailable) {
-    				this.index.insert((Comparable) row.getPrimaryKey(), row);
+    			if (! row.isAvailableForNewRow()) {
+    				this.index.insert(row.getPrimaryKey(), row);
     			}
     		}
     	}
@@ -270,7 +291,8 @@ public class Storage {
     			b.append(ch);
     		}
     	}
-    	in.skipBytes(2 * (size - 1));
+//    	in.skipBytes(2 * (size - 1)); // holy shit!
+    	in.skipBytes(2 * (size - i));
     	return b.toString();
     }
 	
