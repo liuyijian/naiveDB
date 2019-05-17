@@ -1,2 +1,10 @@
-Select * from table1 where a = 1;
-Select * from table2 where b = 2;
+Show databases;
+Use database database1;
+Auth admin 12345;
+auth admin 123456;
+Create database database3;
+Drop database database3;
+use database database1;
+Show database database1;
+Drop table person;
+CREATE TABLE person (name String(256) not null, ID Int not null, PRIMARY KEY(ID));

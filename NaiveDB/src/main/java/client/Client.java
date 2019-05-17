@@ -42,7 +42,7 @@ public class Client {
                     long startTime = System.nanoTime();
                     String inputStr = input.readUTF();
                     long endTime = System.nanoTime();
-                    long costTime = (endTime-startTime)/1000;
+                    double costTime = ((double)endTime-(double)startTime)/1000000;
                     System.out.println("用时（毫秒）：\n" + costTime);
                     System.out.println("返回结果:\n" + inputStr);
                     if (inputStr.endsWith("Bye")) {
@@ -53,7 +53,7 @@ public class Client {
                 else {
                     out.writeUTF(outputStr);
                     String inputStr = input.readUTF();
-                    System.out.println("返回结果:\n" + inputStr);
+                    System.out.println(inputStr);
                     if (inputStr.endsWith("Bye")) {
                         System.out.println("客户端将关闭连接");
                         throw new IOException("客户端主动退出");

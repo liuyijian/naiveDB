@@ -19,6 +19,7 @@ import net.sf.jsqlparser.statement.update.Update;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 import org.json.JSONObject;
@@ -40,9 +41,9 @@ public class SQLParser {
         try{
             metaData = new MetaData();
             // 这里三行定义这些仅用于测试方便,实际使用时去掉
-            metaData.currentDatabase = "database1";
-            metaData.currentUser = "admin";
-            metaData.metaJson = new MetaJson("database1");
+//            metaData.currentDatabase = "database1";
+//            metaData.currentUser = "admin";
+//            metaData.metaJson = new MetaJson("database1");
         }
         catch (IOException e){
             e.printStackTrace();
@@ -50,36 +51,51 @@ public class SQLParser {
     }
 
     // 统一入口
-    public List<String> dealer(String sqls){
+    public StringBuilder dealer(String sqls){
 
-        ArrayList<String> answer = new ArrayList<String>();
+        StringBuilder answerString = new StringBuilder();
         // 处理每一句sql，并将结果塞进返回数组里
         for(String sql : sqls.split(";")){
-            answer.add(abstractParser(sql));
+            answerString.append(abstractParser(sql.trim()));
+            answerString.append("\n");
         }
-        System.out.println(answer);
-        System.out.println();
-        return answer;
+//        System.out.println(answerString);
+        return answerString;
     }
 
     public String abstractParser(String sql){
         try {
-            Statement sqlStatement = CCJSqlParserUtil.parse(sql);
-            // 分类处理sql语句
-            if (sqlStatement instanceof CreateTable){
-                return createTableParser((CreateTable) sqlStatement);
-            } else if (sqlStatement instanceof Drop){
-                return dropParser((Drop) sqlStatement);
-            } else if (sqlStatement instanceof Select){
-                return selectParser((Select) sqlStatement);
-            } else if (sqlStatement instanceof Insert){
-                return insertParser((Insert) sqlStatement);
-            } else if (sqlStatement instanceof Delete){
-                return deleteParser((Delete) sqlStatement);
-            } else if (sqlStatement instanceof Update){
-                return updateParser((Update) sqlStatement);
-            } else {
-                throw new JSQLParserException("不支持此语句");
+            // 分类处理sql语句，手动补齐一些没有的语句
+            String[] arr = sql.split("\\s+");
+
+            if(checkCreateDatabase(arr)){
+                return metaData.createDatabase(arr[2]);
+            } else if(checkShowDatabase(arr)){
+                return metaData.showDatabaseTables(arr[2]);
+            } else if(checkShowDatabases(arr)){
+                return metaData.showDatabases();
+            } else if(checkUseDatabase(arr)){
+                return metaData.switchDatabase(arr[2]);
+            } else if(checkLoginCommand(arr)){
+                return metaData.login(arr[1], arr[2]);
+            }
+            else{
+                Statement sqlStatement = CCJSqlParserUtil.parse(sql);
+                if (sqlStatement instanceof CreateTable){
+                    return createTableParser((CreateTable) sqlStatement);
+                } else if (sqlStatement instanceof Drop){
+                    return dropParser((Drop) sqlStatement);
+                } else if (sqlStatement instanceof Select){
+                    return selectParser((Select) sqlStatement);
+                } else if (sqlStatement instanceof Insert){
+                    return insertParser((Insert) sqlStatement);
+                } else if (sqlStatement instanceof Delete){
+                    return deleteParser((Delete) sqlStatement);
+                } else if (sqlStatement instanceof Update){
+                    return updateParser((Update) sqlStatement);
+                } else {
+                    throw new JSQLParserException("不支持此语句");
+                }
             }
         }
         catch (JSQLParserException e){
@@ -118,56 +134,50 @@ public class SQLParser {
             }
         }
 
-        System.out.println(tableInfo.types);
-        System.out.println(tableInfo.attrs);
-        System.out.println(tableInfo.offsets);
-        System.out.println(tableInfo.pktypes);
-        System.out.println(tableInfo.pkattrs);
-        System.out.println(tableInfo.notnull);
+//        System.out.println(tableInfo.types);
+//        System.out.println(tableInfo.attrs);
+//        System.out.println(tableInfo.offsets);
+//        System.out.println(tableInfo.pktypes);
+//        System.out.println(tableInfo.pkattrs);
+//        System.out.println(tableInfo.notnull);
 
-        if (metaData.metaJson.hasTable(tableName)){
-            ;
-        } else {
-            // 之后自动删除此资源
-//            try(
-//                    Storage storage = new Storage(
-//                            Storage.CONSTRUCT_FROM_NEW_DB,
-//                            tableInfo.filepath,
-//                            tableInfo.types,
-//                            tableInfo.attrs,
-//                            tableInfo.pktypes,
-//                            tableInfo.pkattrs,
-//                            tableInfo.offsets,
-//                            tableInfo.notnull
-//                    )
+//        try{
+//            Storage storage = new Storage(
+//                    Storage.CONSTRUCT_FROM_NEW_DB,
+//                    tableInfo.filepath,
+//                    tableInfo.types,
+//                    tableInfo.attrs,
+//                    tableInfo.pktypes,
+//                    tableInfo.pkattrs,
+//                    tableInfo.offsets,
+//                    tableInfo.notnull
+//            );
+//        } catch(IOException e){
+//            e.printStackTrace();
+//        } finally {
 //
-//            try {
-                JSONObject jsonObject = new JSONObject();
-                jsonObject.put("filepath", tableInfo.filepath);
-                jsonObject.put("types", tableInfo.types);
-                jsonObject.put("attrs", tableInfo.attrs);
-                jsonObject.put("offsets", tableInfo.offsets);
-                jsonObject.put("pktypes", tableInfo.pktypes);
-                jsonObject.put("pkattrs", tableInfo.pkattrs);
-                jsonObject.put("notnull", tableInfo.notnull);
-                metaData.metaJson.createTable(tableName, jsonObject);
-                return "table " + tableName + " successfully created";
-//            }
-//            catch (IOException e){
-//                e.printStackTrace();
-//            }
-        }
-        return "cannot create a existed table " + tableName;
+//        }
+
+
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("filepath", tableInfo.filepath);
+        jsonObject.put("types", tableInfo.types);
+        jsonObject.put("attrs", tableInfo.attrs);
+        jsonObject.put("offsets", tableInfo.offsets);
+        jsonObject.put("pktypes", tableInfo.pktypes);
+        jsonObject.put("pkattrs", tableInfo.pkattrs);
+        jsonObject.put("notnull", tableInfo.notnull);
+        return metaData.createTable(tableName, jsonObject);
     }
 
     public String dropParser(Drop stmt){
-        // 此处不接受drop database
+        // 此处接受drop table or database
         String table = stmt.getName().getName();
         String type = stmt.getType().toUpperCase();
         if(type.equals("TABLE")){
-            return metaData.metaJson.dropTable(table);
+            return metaData.dropTable(table);
         } else {
-            return "haha";
+            return metaData.dropDatabase(table);
         }
     }
 
@@ -244,12 +254,55 @@ public class SQLParser {
         return "success";
     }
 
+    public Boolean checkCreateDatabase(String[] arr){
+        try {
+            return arr[0].toUpperCase().equals("CREATE") && arr[1].toUpperCase().equals("DATABASE") && arr.length == 3;
+        } catch (Exception e){
+            return false;
+        }
+    }
+
+    public Boolean checkShowDatabase(String[] arr){
+        try{
+            return arr[0].toUpperCase().equals("SHOW") && arr[1].toUpperCase().equals("DATABASE") && arr.length == 3;
+        } catch(Exception e){
+            return false;
+        }
+    }
+
+    public Boolean checkShowDatabases(String[] arr){
+        try{
+            return arr[0].toUpperCase().equals("SHOW") && arr[1].toUpperCase().equals("DATABASES") && arr.length == 2;
+        } catch(Exception e){
+            return false;
+        }
+    }
+
+    public Boolean checkUseDatabase(String[] arr){
+        try{
+            return arr[0].toUpperCase().equals("USE") && arr[1].toUpperCase().equals("DATABASE") && arr.length == 3;
+        } catch(Exception e){
+            return false;
+        }
+    }
+
+    public Boolean checkLoginCommand(String[] arr){
+        try{
+            return arr[0].toUpperCase().equals("AUTH") && arr.length == 3;
+        }catch(Exception e){
+            return false;
+        }
+    }
+
 
     public static void main(String[] args) {
 
-        SQLParser sqlParser = new SQLParser();
+//        SQLParser sqlParser = new SQLParser();
+//
+//        sqlParser.dealer("CREATE TABLE person (name String(256) not null, ID Int not null, PRIMARY KEY(ID))");
+//
 
-        sqlParser.dealer("CREATE TABLE person (name String(256) not null, ID Int not null, PRIMARY KEY(ID))");
+
 //        sqlParser.dealer("DROP TABLE table1");
 //        sqlParser.dealer("select name,ID from person where ID > 5");
 //        sqlParser.dealer("select table1.ID, table2.name from table1 join table2 on table1.ID=table2.ID where table1.ID <= 3");

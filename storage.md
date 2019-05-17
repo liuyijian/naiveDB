@@ -1,15 +1,16 @@
-# 储存模块
+# 数据库大作业——储存模块——文档
 
-刘译键
+刘译键 2016013239
 
-苏宇荣
+苏宇荣 2015080045
 
 
 
 ## 概述
 
-**项目仓库地址：**https://github.com/liuyijian/naiveDB
+**项目仓库地址：** <https://github.com/liuyijian/naiveDB>
 
+备注：处于保护代码角度考虑仓库被设置为私有，要查看源码可以请求加合作者，联系微信``lyj-newy``
 
 
 
@@ -38,7 +39,7 @@
 
 * 高效的文件格式。
 
-* 支持五种数据类型：Int，Long，Float，Double，String。
+* 支持五种数据类型：``Int``，``Long``，``Float``，``Double``，``String``
 
 
 

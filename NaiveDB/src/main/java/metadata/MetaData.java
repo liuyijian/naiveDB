@@ -3,6 +3,8 @@ package metadata;
 import org.apache.commons.io.FileUtils;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Vector;
 
 import org.json.JSONObject;
@@ -130,7 +132,10 @@ public class MetaData  {
                 // 添加到databases_list
                 databasesList.put(database);
                 // 添加到auth-map
-                authMap.append(database,new JSONArray("[\"admin\"]"));
+                String[] tmp = {"admin"};
+                JSONArray tmp1 = new JSONArray();
+                tmp1.put("admin");
+                authMap.put(database, tmp1);
                 // 创建目录
                 try {
                     FileUtils.forceMkdir(new File(DATABASES_DIR + "/" + database));
@@ -143,6 +148,7 @@ public class MetaData  {
                 } catch (IOException e) {
                     return "fail to create " + SINGLE_META_FILENAME + " for database:" + database;
                 }
+                writeBack();
                 return String.format("database: %s has been created",database);
             }
             return String.format("You don't have permission to create database:%s", database);
@@ -178,6 +184,7 @@ public class MetaData  {
                     currentDatabase = null;
                     metaJson = null;
                 }
+                writeBack();
 
                 return String.format("Database: %s has been deleted",database);
             }
@@ -205,7 +212,16 @@ public class MetaData  {
     }
 
     public void writeBack(){
-        // 待实现；
+        try{
+            //重新组装wholeMetaJsonObject对象
+            wholeMetaJsonObject.put("users_list", usersList);
+            wholeMetaJsonObject.put("databases_list", databasesList);
+            wholeMetaJsonObject.put("auth_map", authMap);
+            FileUtils.writeStringToFile(new File(DATABASES_DIR+"/"+WHOLE_META_FILENAME), wholeMetaJsonObject.toString(), "UTF-8");
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     public static void main(String[] args) {
         MetaData metaData;

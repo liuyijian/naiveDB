@@ -151,6 +151,7 @@ public class MetaJson {
             for(int i = 0; i < tmpJSONArray.length(); i++){
                 result.add(tmpJSONArray.getInt(i));
             }
+            return result;
         }
         throw new CustomerException("table not exist");
     }
