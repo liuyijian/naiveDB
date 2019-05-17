@@ -110,7 +110,7 @@ public class Storage {
     	}
     }
     
-    public void checkNull(Vector<Object> data) {
+    protected void checkNull(Vector<Object> data) {
     	
     	for (int i = 0; i < this.numberOfCol; ++i) {
     		
