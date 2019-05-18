@@ -37,6 +37,8 @@ public class Storage {
 	protected Stack<Integer>   availableRows;
 	protected BPlusTree<PrimaryKey, Row> index;
 	
+	protected Cache cache;
+	
     public Storage(Integer mode, String fileName, Vector<Integer> types, 
     		       Vector<String> attrs, Vector<Integer> pkTypes, 
     		       Vector<String> pkAttrs, Vector<Integer> offsetsInRow, 
@@ -50,6 +52,9 @@ public class Storage {
 		}
 		this.offset += this.numberOfCol; // extra bytes for recording isNull-signs 
 
+		// TODO: set a reasonable cache size
+		this.cache = new Cache(this, this.offset * 10); 
+		
 		this.types = types;
 		this.attrs = attrs;
 		this.pkTypes = pkTypes;
@@ -69,7 +74,7 @@ public class Storage {
 		this.file = new RandomAccessFile(fileName, "rw");
 		this.data = new Vector<Row>();
 		this.availableRows = new Stack<Integer>();
-
+		
 		if (mode == CONSTRUCT_FROM_NEW_DB) {
 		
 	    	this.numberOfRow = INITIAL_NUMBER_OF_ROW;
@@ -114,7 +119,7 @@ public class Storage {
     	
     	for (int i = 0; i < this.numberOfCol; ++i) {
     		
-    		if (data.get(i).equals(null) && this.notNull.get(i)) {
+    		if (data.get(i) == null && this.notNull.get(i)) {
     			throw new CustomerException("Storage", "checkNull(): " + this.attrs.get(i) + "can not be null!");
     		}
     	}
@@ -297,7 +302,7 @@ public class Storage {
     }
 	
     public static void writeFixedString(String s, int size, DataOutput out)
-		throws IOException {
+		                                throws IOException {
     	
     	for (int i = 0; i < size; ++i) {
     		char ch = 0;
