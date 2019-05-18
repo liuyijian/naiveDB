@@ -127,7 +127,7 @@ public class Storage {
     
 	public void insert(Vector<Object> data) throws IOException {
 	
-		checkNull(data);
+		this.checkNull(data);
 		
 		// throw when pks in data contain null value
 		PrimaryKey pk = new PrimaryKey(this.pkTypes, data, this.pkIndexes);
