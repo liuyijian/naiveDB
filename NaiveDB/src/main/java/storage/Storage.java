@@ -4,6 +4,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.HashMap;
 import java.util.Stack;
 import java.util.Vector;
 
@@ -125,9 +126,39 @@ public class Storage {
     	}
     }
     
-	public void insert(Vector<Object> data) throws IOException {
+    protected void checkType(Vector<Object> data) {
+    	
+		for (int i = 0; i < this.numberOfCol; ++i) {
+    		
+    		if (data.get(i) instanceof Integer && this.types.get(i) == Type.TYPE_INT) {
+    			continue;
+    		}
+    		if (data.get(i) instanceof Long && this.types.get(i) == Type.TYPE_LONG) {
+    			continue;
+    		}
+    		if (data.get(i) instanceof Float && this.types.get(i) == Type.TYPE_FLOAT) {
+    			continue;
+    		}
+    		if (data.get(i) instanceof Double && this.types.get(i) == Type.TYPE_DOUBLE) {
+    			continue;
+    		}
+    		if (data.get(i) instanceof String && this.types.get(i) == Type.TYPE_STRING) {
+    			continue;
+    		}
+
+    		throw new CustomerException("Storage", "checkType(): " + data.get(i) + "has a wrong type!");
+    	}
+    }
+    
+    protected boolean isAttribute(String attr) {
+    	
+    	return this.attrs.contains(attr);
+    }
+    
+	public Integer insert(Vector<Object> data) throws IOException {
 	
 		this.checkNull(data);
+		this.checkType(data);
 		
 		// throw when pks in data contain null value
 		PrimaryKey pk = new PrimaryKey(this.pkTypes, data, this.pkIndexes);
@@ -159,10 +190,339 @@ public class Storage {
 			
 			row.delete();
     		this.availableRows.add(row.order);
+    		
+    		return 0;
+		}
+		else {
+			return 1;
 		}
 	}
     
-    public void delete(PrimaryKey key) throws IOException {
+	protected static int attributeCompare(Object left, Object right) {
+				
+		if (left instanceof String && right instanceof String) {
+			return ((String) left).compareTo((String) right);
+		} 
+		else if (left instanceof String || right instanceof String) {
+			throw new CustomerException("Storage", left.toString() + " and " + right.toString() + " can not be compared.");
+		}
+
+		Double leftValue = Double.valueOf(left.toString());
+		Double rightValue = Double.valueOf(right.toString());
+		return leftValue.compareTo(rightValue);
+	}
+	
+	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> filtrateEqual(
+		Object iterable, Object leftExpression, Object rightExpression) throws IOException {
+		
+		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> result = new HashMap<PrimaryKey, 
+																 Entry<PrimaryKey, Row>>();
+		Object left = leftExpression;
+		Object right = rightExpression;
+		boolean leftIsAttribute = leftExpression instanceof String 
+				                  && this.isAttribute((String) leftExpression);
+		boolean rightIsAttribute = rightExpression instanceof String
+								   && this.isAttribute((String) rightExpression);
+		
+		if (leftIsAttribute && rightIsAttribute) {
+			for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				left = entry.value.get((String) leftExpression);
+				right = entry.value.get((String) rightExpression);
+				if (attributeCompare(left, right) == 0) {
+					result.put(entry.key, entry);
+				}
+			}
+		}
+		else if (leftIsAttribute) {
+			for (Entry<PrimaryKey, Row> entry  
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				left = entry.value.get((String) leftExpression);
+				if (attributeCompare(left, right) == 0) {
+					result.put(entry.key, entry);
+				}
+			}
+		}
+		else if (rightIsAttribute) {
+			for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				right = entry.value.get((String) rightExpression);
+				if (attributeCompare(left, right) == 0) {
+					result.put(entry.key, entry);
+				}
+			}
+		}
+		else {
+			if (attributeCompare(left, right) == 0) {
+				for (Entry<PrimaryKey, Row> entry 
+					    : iterable instanceof BPlusTree
+				        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+				        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+					result.put(entry.key, entry);
+				}
+			}
+		}
+
+		return result;
+	}
+	
+	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> filtrateLarger(
+		Object iterable, Object leftExpression, boolean isEqualInclusive, 
+		Object rightExpression) throws IOException {
+		
+		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> result = new HashMap<PrimaryKey, 
+				 											     Entry<PrimaryKey, Row>>();
+		Object left = leftExpression;
+		Object right = rightExpression;
+		boolean leftIsAttribute = leftExpression instanceof String 
+								  && this.isAttribute((String) leftExpression);
+		boolean rightIsAttribute = rightExpression instanceof String
+								  && this.isAttribute((String) rightExpression);
+
+		if (leftIsAttribute && rightIsAttribute) {
+			for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				left = entry.value.get((String) leftExpression);
+				right = entry.value.get((String) rightExpression);
+				if (isEqualInclusive) {
+					if (attributeCompare(left, right) >= 0) {
+						result.put(entry.key, entry);
+					}					
+				}
+				else {
+					if (attributeCompare(left, right) > 0) {
+						result.put(entry.key, entry);
+					}
+				}
+			}
+		}
+		else if (leftIsAttribute) {
+			for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				left = entry.value.get((String) leftExpression);
+				if (isEqualInclusive) {
+					if (attributeCompare(left, right) >= 0) {
+						result.put(entry.key, entry);
+					}					
+				}
+				else {
+					if (attributeCompare(left, right) > 0) {
+						result.put(entry.key, entry);
+					}
+				}
+			}
+		}
+		else if (rightIsAttribute) {
+			for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				right = entry.value.get((String) rightExpression);
+				if (isEqualInclusive) {
+					if (attributeCompare(left, right) >= 0) {
+						result.put(entry.key, entry);
+					}					
+				}
+				else {
+					if (attributeCompare(left, right) > 0) {
+						result.put(entry.key, entry);
+					}
+				}
+			}
+		}
+		else {
+			if (isEqualInclusive) {
+				if (attributeCompare(left, right) >= 0) {
+					for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+						result.put(entry.key, entry);
+					}
+				}					
+			}
+			else {
+				if (attributeCompare(left, right) > 0) {
+					for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+						result.put(entry.key, entry);
+					}
+				}
+			}
+		}
+
+		return result;
+	}
+	
+	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> filtrateSmaller(
+		Object iterable, Object leftExpression, boolean isEqualInclusive, Object rightExpression) 
+		throws IOException {
+		
+		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> result = new HashMap<PrimaryKey, 
+			     											 Entry<PrimaryKey, Row>>();
+		Object left = leftExpression;
+		Object right = rightExpression;
+		boolean leftIsAttribute = leftExpression instanceof String 
+								  && this.isAttribute((String) leftExpression);
+		boolean rightIsAttribute = rightExpression instanceof String
+								   && this.isAttribute((String) rightExpression);
+		
+		if (leftIsAttribute && rightIsAttribute) {
+			for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				left = entry.value.get((String) leftExpression);
+				right = entry.value.get((String) rightExpression);
+				if (isEqualInclusive) {
+					if (attributeCompare(left, right) <= 0) {
+						result.put(entry.key, entry);
+					}					
+				}
+				else {
+					if (attributeCompare(left, right) < 0) {
+						result.put(entry.key, entry);
+					}		
+				}
+			}
+		}
+		else if (leftIsAttribute) {
+			for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				left = entry.value.get((String) leftExpression);
+				if (isEqualInclusive) {
+					if (attributeCompare(left, right) <= 0) {
+						result.put(entry.key, entry);
+					}					
+				}
+				else {
+					if (attributeCompare(left, right) < 0) {
+						result.put(entry.key, entry);
+					}
+				}
+			}
+		}
+		else if (rightIsAttribute) {
+			for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				right = entry.value.get((String) rightExpression);
+				if (isEqualInclusive) {
+					if (attributeCompare(left, right) <= 0) {
+						result.put(entry.key, entry);
+					}					
+				}
+				else {
+					if (attributeCompare(left, right) < 0) {
+						result.put(entry.key, entry);
+					}
+				}
+			}
+		}
+		else {
+			if (isEqualInclusive) {
+				if (attributeCompare(left, right) <= 0) {
+					for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+						result.put(entry.key, entry);
+					}
+				}					
+			}
+			else {
+				if (attributeCompare(left, right) < 0) {
+					for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+
+						result.put(entry.key, entry);	
+					}
+				}
+			}
+		}
+		
+		return result;
+	}
+	
+	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> filtrateNotEqual(
+		Object iterable, Object leftExpression, Object rightExpression) 
+		throws IOException {
+		
+		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> result = new HashMap<PrimaryKey, 
+				 Entry<PrimaryKey, Row>>();
+		Object left = leftExpression;
+		Object right = rightExpression;
+		boolean leftIsAttribute = leftExpression instanceof String 
+								  && this.isAttribute((String) leftExpression);
+		boolean rightIsAttribute = rightExpression instanceof String
+							      && this.isAttribute((String) rightExpression);
+
+		if (leftIsAttribute && rightIsAttribute) {
+			for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				left = entry.value.get((String) leftExpression);
+				right = entry.value.get((String) rightExpression);
+				if (attributeCompare(left, right) != 0) {
+					result.put(entry.key, entry);
+				}
+			}
+		}
+		else if (leftIsAttribute) {
+			for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				left = entry.value.get((String) leftExpression);
+				if (attributeCompare(left, right) != 0) {
+					result.put(entry.key, entry);
+				}
+			}
+		}
+		else if (rightIsAttribute) {
+			for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				right = entry.value.get((String) rightExpression);
+				if (attributeCompare(left, right) != 0) {
+					result.put(entry.key, entry);
+				}
+			}
+		}
+		else {
+			if (attributeCompare(left, right) != 0) {
+				for (Entry<PrimaryKey, Row> entry 
+			    : iterable instanceof BPlusTree
+			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
+			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+					result.put(entry.key, entry);
+				}
+			}
+		}
+
+		return result;
+	}
+	
+	public void deleteEqualPk(PrimaryKey key) throws IOException {
     	
     	ResultSet<PrimaryKey, Row> resultSet = this.index.delete(key);
     	Vector<Entry<PrimaryKey, Row>> entries = resultSet.getResultSet();
@@ -174,9 +534,9 @@ public class Storage {
     	}
     }
     
-    public void deleteBetween(PrimaryKey left, boolean isLeftInclusive, 
-    						  PrimaryKey right, boolean isRightInclusive) 
-    		                  throws IOException {
+    public void deleteBetweenPk(PrimaryKey left, boolean isLeftInclusive, 
+    						    PrimaryKey right, boolean isRightInclusive) 
+    		                    throws IOException {
     	
     	ResultSet<PrimaryKey, Row> resultSet = this.index.deleteBetween(left, 
     			                                                        isLeftInclusive, 
@@ -191,8 +551,8 @@ public class Storage {
     	}
     }
 
-    public void deleteLarger(PrimaryKey left, boolean isLeftInclusive) 
-    		                 throws IOException {
+    public void deleteLargerPk(PrimaryKey left, boolean isLeftInclusive) 
+    		                   throws IOException {
     	
     	ResultSet<PrimaryKey, Row> resultSet = this.index.deleteLarger(left, 
     			   													   isLeftInclusive);
@@ -205,8 +565,8 @@ public class Storage {
 		}
     }
 
-    public void deleteSmaller(PrimaryKey right, boolean isRightInclusive) 
-    		                  throws IOException {
+    public void deleteSmallerPk(PrimaryKey right, boolean isRightInclusive) 
+    		                    throws IOException {
 	
     	ResultSet<PrimaryKey, Row> resultSet = this.index.deleteSmaller(right, 
     			 														isRightInclusive);
@@ -219,7 +579,7 @@ public class Storage {
 		}
     }
 
-    public void deleteNotEqual(PrimaryKey key) throws IOException {
+    public void deleteNotEqualPk(PrimaryKey key) throws IOException {
     	
     	ResultSet<PrimaryKey, Row> resultSet = this.index.deleteNotEqual(key);
 		Vector<Entry<PrimaryKey, Row>> entries = resultSet.getResultSet();

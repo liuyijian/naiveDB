@@ -114,7 +114,7 @@ public class Test {
         right.add(10);
         PrimaryKey rightPk = new PrimaryKey(pkTypes, right, pkIndexes);
         
-        test.deleteBetween(leftPk, true, rightPk, false);
+        test.deleteBetweenPk(leftPk, true, rightPk, false);
         
         data = new Vector<Vector<Object>>();
 		
@@ -272,7 +272,7 @@ public class Test {
         right.add(new String("10"));
         PrimaryKey rightPk = new PrimaryKey(pkTypes, right, pkIndexes);
         
-        test.deleteBetween(leftPk, true, rightPk, false);
+        test.deleteBetweenPk(leftPk, true, rightPk, false);
         
         data = new Vector<Vector<Object>>();
 		
@@ -376,5 +376,11 @@ public class Test {
 		
 		storageWriteTestWithMultiPks();
 		storageReadTestWithMultiPks();
+		
+		Integer a = 1;
+		Object c = a;
+		Long b = (long) 1;
+		Object d = b;
+		System.out.println(c.toString());
 	}
 }

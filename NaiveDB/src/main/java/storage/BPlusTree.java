@@ -1,7 +1,11 @@
 package storage;
 
+import java.util.Iterator;
+import java.util.Vector;
 
-public class BPlusTree<Key extends Comparable<Key>, Value> {
+
+public class BPlusTree<Key extends Comparable<Key>, Value> 
+             implements Iterable<Entry<Key, Value>> {
 	
 	protected int              n;
 	protected int 			   size;
@@ -132,4 +136,10 @@ public class BPlusTree<Key extends Comparable<Key>, Value> {
     		this.root = new ExternalNode<Key, Value>(this.n, null, null);
     	}
     }
+
+	@Override
+	public Iterator<Entry<Key, Value>> iterator() {
+				
+		return this.findLarger(this.minKey, true).result.iterator();
+	}
 }
