@@ -3,6 +3,8 @@ package metadata;
 import org.apache.commons.io.FileUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.json.JSONTokener;
+import storage.Type;
 import util.CustomerException;
 
 import java.io.File;
@@ -45,10 +47,6 @@ public class MetaJson {
         }
     }
 
-    public String getTableList(){
-        return database + " : "+singleMetaJsonObject.keySet().toString();
-    }
-
     public Boolean hasTable(String tableName){
         return singleMetaJsonObject.has(tableName);
     }
@@ -73,6 +71,29 @@ public class MetaJson {
             return String.format("have dropped table: %s",tableName);
         }
         return String.format("cannot drop a non-exist table: %s",tableName);
+    }
+
+    public String showTableInfo(String tableName){
+        if(hasTable(tableName)){
+            Vector<String> attr = getAttributesName(tableName);
+            Vector<Integer> type = getAttributesType(tableName);
+            StringBuilder result = new StringBuilder("------------\n" + tableName + "\n------------\n");
+            assert attr.size() == type.size();
+            for(int i = 0; i < attr.size(); i++){
+                result.append(attr.get(i));
+                result.append(" ");
+                result.append(Type.TYPE_REVERSE_MAP.get(type.get(i)));
+                result.append("\n");
+            }
+            result.append("------------");
+            return result.toString();
+        }
+        return "could not show info of a non-exist table";
+
+    }
+
+    public String getTableList(){
+        return database + " : "+singleMetaJsonObject.keySet().toString();
     }
 
     public String getTablePath(String tableName){
