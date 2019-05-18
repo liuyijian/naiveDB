@@ -40,4 +40,12 @@ public class Type {
         put("FLOAT", OFFSET_FLOAT);
         put("DOUBLE", OFFSET_DOUBLE);
     }};
+
+    public static final Map<Integer, String> TYPE_REVERSE_MAP = new HashMap<Integer, String>(){{
+        put(TYPE_INT,"INT");
+        put(TYPE_LONG, "LONG");
+        put(TYPE_FLOAT, "FLOAT");
+        put(TYPE_DOUBLE, "DOUBLE");
+        put(TYPE_STRING, "STRING");
+    }};
 }

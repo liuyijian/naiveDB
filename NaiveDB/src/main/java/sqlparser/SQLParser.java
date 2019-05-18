@@ -78,6 +78,8 @@ public class SQLParser {
                 return metaData.switchDatabase(arr[2]);
             } else if(checkLoginCommand(arr)){
                 return metaData.login(arr[1], arr[2]);
+            } else if(checkShowTable(arr)){
+                return metaData.metaJson.showTableInfo(arr[2]);
             }
             else{
                 Statement sqlStatement = CCJSqlParserUtil.parse(sql);
@@ -290,6 +292,14 @@ public class SQLParser {
         try{
             return arr[0].toUpperCase().equals("AUTH") && arr.length == 3;
         }catch(Exception e){
+            return false;
+        }
+    }
+
+    public Boolean checkShowTable(String[] arr){
+        try{
+            return arr[0].toUpperCase().equals("SHOW") && arr[1].toUpperCase().equals("TABLE") && arr.length == 3;
+        } catch(Exception e){
             return false;
         }
     }
