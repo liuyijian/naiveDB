@@ -11,13 +11,13 @@ public class Row {
 	protected int             order;
 	protected long            offset;
 
-	protected boolean         isAvailable;
+	protected Boolean         isAvailable;
 	protected Vector<Object>  data;
 	protected Vector<Boolean> isNull;
 	
 	protected PrimaryKey      pks;
-	protected boolean	      isInMemory;
-	protected boolean 		  isModified;
+	protected Boolean	      isInMemory;
+	protected Boolean 		  isModified;
 	
 	public Row(Storage storage, int order) throws IOException { 
 		
@@ -25,13 +25,30 @@ public class Row {
 		this.order   = order;
 		this.offset  = this.order * storage.offset;
 		
-		this.isAvailable = true;
+		this.isAvailable = null;
 		this.data        = null;
 		this.isNull      = null;
 				
 		this.pks         = null;
 		this.isInMemory  = false;
-		this.isModified  = false;
+		this.isModified  = null;
+	}
+	
+	public void release() throws IOException {
+		
+		if (!this.isInMemory || !this.isModified) {
+			return;
+		}
+		
+		this.writeToFile();
+		
+		this.isAvailable = null;
+		this.data        = null;
+		this.isNull      = null;
+				
+		this.pks         = null;
+		this.isInMemory  = false;
+		this.isModified  = null;
 	}
 	
 	public boolean isAvailableForNewRow() throws IOException {
@@ -96,7 +113,7 @@ public class Row {
 		this.isAvailable = false;
 		this.data  	     = data;
 		for (int i = 0; i < storage.numberOfCol; ++i) {
-			this.isNull.set(i, this.data.get(i).equals(null));
+			this.isNull.set(i, this.data.get(i) == null);
 		}
 		
 		Vector<Object> pkAttrs = new Vector<Object>();
@@ -147,6 +164,8 @@ public class Row {
 	
 	public void readFromFile() throws IOException {
 		
+		this.storage.cache.put(this);
+		
 		RandomAccessFile file = this.storage.file;
 		file.seek(this.offset);
 		
@@ -195,7 +214,7 @@ public class Row {
 	
 	public void writeToFile() throws IOException {
 		
-		if (!this.isModified || !this.isInMemory) {
+		if (!this.isInMemory || !this.isModified) {
 			return;
 		}
 		
