@@ -2,8 +2,11 @@ package sqlparser;
 
 
 
+import javafx.util.Pair;
 import metadata.MetaJson;
 import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
+import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
 import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
@@ -34,7 +37,6 @@ import metadata.TableInfo;
 import storage.Storage;
 import storage.Type;
 
-import query.Query;
 
 
 public class SQLParser {
@@ -106,6 +108,9 @@ public class SQLParser {
                 }
             }
         }
+        catch (IOException e){
+            return "error";
+        }
         catch (JSQLParserException e){
             return "error";
         }
@@ -118,6 +123,7 @@ public class SQLParser {
         String tableName = stmt.getTable().getName();
         TableInfo tableInfo = new TableInfo();
 
+        // 此处不能使用getTablePath接口，因为此表尚且不存在
         tableInfo.filepath  = metaData.metaJson.dbpath + "/" + tableName + ".db";
 
         for(ColumnDefinition columnDefinition : stmt.getColumnDefinitions()){
@@ -142,30 +148,21 @@ public class SQLParser {
             }
         }
 
-//        System.out.println(tableInfo.types);
-//        System.out.println(tableInfo.attrs);
-//        System.out.println(tableInfo.offsets);
-//        System.out.println(tableInfo.pktypes);
-//        System.out.println(tableInfo.pkattrs);
-//        System.out.println(tableInfo.notnull);
-
-//        try{
-//            Storage storage = new Storage(
-//                    Storage.CONSTRUCT_FROM_NEW_DB,
-//                    tableInfo.filepath,
-//                    tableInfo.types,
-//                    tableInfo.attrs,
-//                    tableInfo.pktypes,
-//                    tableInfo.pkattrs,
-//                    tableInfo.offsets,
-//                    tableInfo.notnull
-//            );
-//        } catch(IOException e){
-//            e.printStackTrace();
-//        } finally {
-//
-//        }
-
+        try{
+            Storage storage = new Storage(
+                    Storage.CONSTRUCT_FROM_NEW_DB,
+                    tableInfo.filepath,
+                    tableInfo.types,
+                    tableInfo.attrs,
+                    tableInfo.pktypes,
+                    tableInfo.pkattrs,
+                    tableInfo.offsets,
+                    tableInfo.notnull
+            );
+            metaData.metaJson.query.upLoadTable(tableName, storage);
+        } catch(IOException e){
+            e.printStackTrace();
+        }
 
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("filepath", tableInfo.filepath);
@@ -175,6 +172,7 @@ public class SQLParser {
         jsonObject.put("pktypes", tableInfo.pktypes);
         jsonObject.put("pkattrs", tableInfo.pkattrs);
         jsonObject.put("notnull", tableInfo.notnull);
+
         return metaData.createTable(tableName, jsonObject);
     }
 
@@ -226,20 +224,21 @@ public class SQLParser {
         return "success";
     }
 
-    public String insertParser(Insert stmt){
-        // 范例语句1 的输出 INSERT INTO person VALUES ('Bob', 15)
-        // 范例语句2 的输出 INSERT INTO person(name) VALUES ('Bob')
+    public String insertParser(Insert stmt) throws IOException{
+
         String tableName = stmt.getTable().getName();
         Vector<String> defaultColumnOrder = metaData.metaJson.getAttributesName(tableName);
         Vector<String> columnOrder= new Vector<>();
         Vector<Object> row = new Vector<Object>(((ExpressionList)stmt.getItemsList()).getExpressions());
+        Integer insertRowCount;
 
         for(Column column : stmt.getColumns()){
             columnOrder.add(column.getColumnName());
         }
+
         if (columnOrder.size() == 0){
             //若无columns则直接把row丢给insert
-
+            insertRowCount = metaData.metaJson.query.insert(tableName,row);
         } else{
             Vector<Object> orderedRow = new Vector<Object>();
             for(int i = 0; i < defaultColumnOrder.size(); i++){
@@ -249,36 +248,54 @@ public class SQLParser {
                 orderedRow.setElementAt(row.get(i),defaultColumnOrder.indexOf(columnOrder.get(i)));
             }
             // 丢给insert orderedRow
+           insertRowCount =  metaData.metaJson.query.insert(tableName,orderedRow);
         }
 
-        return "success";
+        return "insert row" + insertRowCount;
     }
 
     public String deleteParser(Delete stmt){
 
-        System.out.println(stmt.getTable());
-        System.out.println(stmt.getWhere());
-
-        BinaryExpression binaryExpression = (BinaryExpression) stmt.getWhere();
-        System.out.println(binaryExpression.getLeftExpression());
-        System.out.println(binaryExpression.getRightExpression());
-        System.out.println(binaryExpression instanceof GreaterThan);
-        System.out.println(binaryExpression instanceof GreaterThanEquals);
-
-
-        return "success";
+        String tableName = stmt.getTable().getName();
+        Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple = whereParser((BinaryExpression) stmt.getWhere());
+        Integer deleteCount = metaData.metaJson.query.delete(tableName, tuple.first, tuple.second);
+        return "deleteRow : " + deleteCount;
     }
 
     public String updateParser(Update stmt){
 
-        System.out.println(stmt.getTables());
-        System.out.println(stmt.getColumns());
-        System.out.println(stmt.getExpressions());
-        System.out.println(stmt.getWhere());
-        BinaryExpression binaryExpression = (BinaryExpression) stmt.getWhere();
-        System.out.println(binaryExpression.getLeftExpression());
-        System.out.println(binaryExpression.getRightExpression());
-        return "success";
+        String tableName = stmt.getTables().get(0).getName();
+        Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple = whereParser((BinaryExpression) stmt.getWhere());
+        Integer updateCount = metaData.metaJson.query.update(
+                tableName,
+                stmt.getColumns().get(0).getColumnName(),
+                stmt.getExpressions().get(0),
+                tuple.first,
+                tuple.second
+        );
+        return "updateRow : " + updateCount;
+    }
+
+    public Tuple<Vector<BinaryExpression>, Vector<Boolean>> whereParser(BinaryExpression stmt){
+        Vector<BinaryExpression> binaryExpressions = new Vector<BinaryExpression>();
+        Vector<Boolean> booleanVector = new Vector<>();
+        while(true){
+            if(stmt instanceof AndExpression){
+                binaryExpressions.insertElementAt((BinaryExpression)stmt.getRightExpression(),0);
+                booleanVector.insertElementAt(false,0);
+                stmt = (BinaryExpression)stmt.getLeftExpression();
+                continue;
+            } else if (stmt instanceof OrExpression){
+                binaryExpressions.insertElementAt((BinaryExpression)stmt.getRightExpression(),0);
+                booleanVector.insertElementAt(true,0);
+                stmt = (BinaryExpression)stmt.getLeftExpression();
+                continue;
+            } else {
+                binaryExpressions.insertElementAt(stmt, 0);
+                break;
+            }
+        }
+        return new Tuple<>(binaryExpressions,booleanVector);
     }
 
     public Boolean checkCreateDatabase(String[] arr){
@@ -329,6 +346,15 @@ public class SQLParser {
         }
     }
 
+    class Tuple<A,B>{
+        public final A first;
+        public final B second;
+
+        public Tuple(A a, B b){
+            this.first = a;
+            this.second = b;
+        }
+    }
 
     public static void main(String[] args) {
 
@@ -345,13 +371,19 @@ public class SQLParser {
 //        sqlParser.dealer("INSERT INTO person(name) VALUES ('Bob');");
 //        sqlParser.dealer("UPDATE  person  SET  gender = 'male'  WHERE  name = 'Ben'");
 //        sqlParser.dealer("DELETE FROM person WHERE name = 'Bob'");
+        try{
+            Statement sqlStatement = CCJSqlParserUtil.parse("update person set name = 'Bob' where ID > 3 or baby <= 5");
+            Update stmt = (Update) sqlStatement;
 
-        Vector<Object> test = new Vector<Object>(4);
-        for(int i = 0; i < 4; i++){
-            test.add(null);
+            SQLParser sqlParser = new SQLParser();
+            sqlParser.updateParser(stmt);
+
+
+        } catch (Exception e){
+
         }
-        test.setElementAt("1",2);
-        System.out.println(test);
+
+
 
     }
 }

@@ -7,30 +7,49 @@ import storage.Type;
 import util.CustomerException;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Vector;
+
+import query.Query;
+import storage.Storage;
 
 import metadata.TableInfo;
 
 public class MetaJson {
 
     public String database;
+    // 元文件路径 = 数据库路径 + 元文件文件名
     public String path;
+    // 数据库路径
     public String dbpath;
-    public JSONObject singleMetaJsonObject;
-    public TableInfo singletableInfo;
 
-    public static final Integer TYPE_INT    = 3;
-    public static final Integer TYPE_LONG   = 4;
-    public static final Integer TYPE_FLOAT  = 5;
-    public static final Integer TYPE_DOUBLE = 6;
-    public static final Integer TYPE_STRING = 7;
+    public JSONObject singleMetaJsonObject;
+
+    // 操作数据表的类对象
+    public Query query;
 
     public MetaJson(String database){
         this.database = database;
-        this.path = MetaData.DATABASES_DIR+"/"+this.database+"/"+MetaData.SINGLE_META_FILENAME;
         this.dbpath = MetaData.DATABASES_DIR + "/" + this.database;
+        this.path = this.dbpath+"/"+MetaData.SINGLE_META_FILENAME;
+
         try{
             this.singleMetaJsonObject = new JSONObject(FileUtils.readFileToString(new File(this.path),"UTF-8"));
+            this.query = new Query();
+            for(String tableName : this.singleMetaJsonObject.keySet()){
+                Storage storage = new Storage(
+                        Storage.CONSTRUCT_FROM_EXISTED_DB,
+                        getTablePath(tableName),
+                        getAttributesType(tableName),
+                        getAttributesName(tableName),
+                        getAttributesPKType(tableName),
+                        getAttributesPKName(tableName),
+                        getAttributesOffset(tableName),
+                        getAttributesNotNull(tableName)
+                );
+                this.query.initLoadTable(tableName,storage);
+            }
+
         } catch (Exception e){
             this.singleMetaJsonObject = new JSONObject("{}");
             System.out.println("could not load single_meta_json file and create one");
@@ -50,7 +69,7 @@ public class MetaJson {
         return singleMetaJsonObject.has(tableName);
     }
 
-    public String createTable(String tableName, JSONObject tableInfo){
+    public String createTable(String tableName, JSONObject tableInfo ){
         if (! hasTable(tableName)){
             singleMetaJsonObject.put(tableName,tableInfo);
             writeBack();
@@ -66,6 +85,7 @@ public class MetaJson {
                 FileUtils.deleteQuietly(new File(tablePath));
             }
             singleMetaJsonObject.remove(tableName);
+            query.downLoadTable(tableName);
             writeBack();
             return String.format("have dropped table: %s",tableName);
         }
