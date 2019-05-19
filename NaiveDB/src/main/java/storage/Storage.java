@@ -466,7 +466,7 @@ public class Storage {
 		throws IOException {
 		
 		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> result = new HashMap<PrimaryKey, 
-				 Entry<PrimaryKey, Row>>();
+				 		   									 Entry<PrimaryKey, Row>>();
 		Object left = leftExpression;
 		Object right = rightExpression;
 		boolean leftIsAttribute = leftExpression instanceof String 
@@ -518,9 +518,131 @@ public class Storage {
 				}
 			}
 		}
-
+		
 		return result;
 	}
+	
+	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> filtrateEqualPk(
+		Object iterable, PrimaryKey key) throws IOException {
+    	
+		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> result = new HashMap<PrimaryKey, 
+					 										 Entry<PrimaryKey, Row>>();
+
+		if (iterable instanceof BPlusTree) {
+	    	ResultSet<PrimaryKey, Row> resultSet = this.index.find(key);
+	    	Vector<Entry<PrimaryKey, Row>> entries = resultSet.getResultSet();
+	    	for (Entry<PrimaryKey, Row> entry : entries) {
+				result.put(entry.key, entry);
+	    	}			
+		}
+		else {
+			for (Entry<PrimaryKey, Row> entry 
+				: ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				if (entry.value.getPrimaryKey().compareTo(key) == 0) {
+					result.put(entry.key, entry);
+				}
+			}
+		}
+		
+		return result;
+    }
+    
+    public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> filtrateLargerPk(
+		Object iterable, PrimaryKey left, boolean isLeftInclusive) throws IOException {
+    	
+		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> result = new HashMap<PrimaryKey, 
+					 										 Entry<PrimaryKey, Row>>();
+
+		if (iterable instanceof BPlusTree) {
+	    	ResultSet<PrimaryKey, Row> resultSet = this.index.findLarger(left, 
+					   												     isLeftInclusive);
+	    	Vector<Entry<PrimaryKey, Row>> entries = resultSet.getResultSet();
+	    	for (Entry<PrimaryKey, Row> entry : entries) {
+				result.put(entry.key, entry);
+	    	}			
+		}
+		else {
+			if (isLeftInclusive) {
+				for (Entry<PrimaryKey, Row> entry 
+					: ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+					if (entry.value.getPrimaryKey().compareTo(left) >= 0) {
+						result.put(entry.key, entry);
+					}
+				}				
+			}
+			else {
+				for (Entry<PrimaryKey, Row> entry 
+					: ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+					if (entry.value.getPrimaryKey().compareTo(left) > 0) {
+						result.put(entry.key, entry);
+					}
+				}			
+			}
+		}
+		
+		return result;
+    }
+
+    public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> filtrateSmallerPk(
+		Object iterable, PrimaryKey right, boolean isRightInclusive) throws IOException {
+	
+    	HashMap<PrimaryKey, Entry<PrimaryKey, Row>> result = new HashMap<PrimaryKey, 
+				 											 Entry<PrimaryKey, Row>>();
+
+		if (iterable instanceof BPlusTree) {
+			ResultSet<PrimaryKey, Row> resultSet = this.index.findSmaller(right, 
+					                                                      isRightInclusive);
+			Vector<Entry<PrimaryKey, Row>> entries = resultSet.getResultSet();
+			for (Entry<PrimaryKey, Row> entry : entries) {
+				result.put(entry.key, entry);
+			}			
+		}
+		else {
+			if (isRightInclusive) {
+				for (Entry<PrimaryKey, Row> entry 
+	    			: ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+		    		if (entry.value.getPrimaryKey().compareTo(right) <= 0) {
+			    	    result.put(entry.key, entry);
+				    }
+				}				
+			}
+			else {
+				for (Entry<PrimaryKey, Row> entry 
+	    			: ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+		    		if (entry.value.getPrimaryKey().compareTo(right) < 0) {
+			    	    result.put(entry.key, entry);
+				    }
+				}								
+			}
+		}
+		
+		return result;
+    }
+
+    public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> filtrateNotEqualPk(
+		Object iterable, PrimaryKey key) throws IOException {
+    	
+		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> result = new HashMap<PrimaryKey, 
+					 										 Entry<PrimaryKey, Row>>();
+
+		if (iterable instanceof BPlusTree) {
+	    	ResultSet<PrimaryKey, Row> resultSet = this.index.findNotEqual(key);
+	    	Vector<Entry<PrimaryKey, Row>> entries = resultSet.getResultSet();
+	    	for (Entry<PrimaryKey, Row> entry : entries) {
+				result.put(entry.key, entry);
+	    	}			
+		}
+		else {
+			for (Entry<PrimaryKey, Row> entry 
+				: ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
+				if (entry.value.getPrimaryKey().compareTo(key) != 0) {
+					result.put(entry.key, entry);
+				}
+			}
+		}
+		
+		return result;
+    }
 	
 	public void deleteEqualPk(PrimaryKey key) throws IOException {
     	
