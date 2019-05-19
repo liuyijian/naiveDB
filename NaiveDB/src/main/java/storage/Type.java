@@ -14,6 +14,9 @@ public class Type {
     public static final Integer OFFSET_LONG = 8;
     public static final Integer OFFSET_FLOAT = 4;
     public static final Integer OFFSET_DOUBLE = 8;
+    
+    public static final Boolean EXPRESSION_AND = false;
+    public static final Boolean EXPRESSION_OR  = true;
 
     public static final Map <String,Integer> TYPE_MAP = new HashMap<String,Integer>() {{
 

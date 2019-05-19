@@ -268,6 +268,11 @@ public class Row {
 		this.isModified = false;
 	}
 	
+	public int getOrder() {
+		
+		return this.order;
+	}
+	
 	@Override
 	public String toString() {
 		
