@@ -3,8 +3,14 @@ package sqlparser;
 
 
 import metadata.MetaJson;
+import net.sf.jsqlparser.expression.Expression;
+import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
+import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
+import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
+import net.sf.jsqlparser.expression.operators.relational.ItemsList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
@@ -18,10 +24,8 @@ import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.update.Update;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
+
 import org.json.JSONObject;
 
 import metadata.MetaData;
@@ -29,6 +33,8 @@ import metadata.TableInfo;
 
 import storage.Storage;
 import storage.Type;
+
+import query.Query;
 
 
 public class SQLParser {
@@ -223,11 +229,27 @@ public class SQLParser {
     public String insertParser(Insert stmt){
         // 范例语句1 的输出 INSERT INTO person VALUES ('Bob', 15)
         // 范例语句2 的输出 INSERT INTO person(name) VALUES ('Bob')
+        String tableName = stmt.getTable().getName();
+        Vector<String> defaultColumnOrder = metaData.metaJson.getAttributesName(tableName);
+        Vector<String> columnOrder= new Vector<>();
+        Vector<Object> row = new Vector<Object>(((ExpressionList)stmt.getItemsList()).getExpressions());
 
-        //若无columns则用默认值
-        System.out.println(stmt.getColumns());
-        //需要检查
-        System.out.println(stmt.getItemsList());
+        for(Column column : stmt.getColumns()){
+            columnOrder.add(column.getColumnName());
+        }
+        if (columnOrder.size() == 0){
+            //若无columns则直接把row丢给insert
+
+        } else{
+            Vector<Object> orderedRow = new Vector<Object>();
+            for(int i = 0; i < defaultColumnOrder.size(); i++){
+                orderedRow.add(null);
+            }
+            for(int i = 0; i < columnOrder.size(); i++){
+                orderedRow.setElementAt(row.get(i),defaultColumnOrder.indexOf(columnOrder.get(i)));
+            }
+            // 丢给insert orderedRow
+        }
 
         return "success";
     }
@@ -240,6 +262,9 @@ public class SQLParser {
         BinaryExpression binaryExpression = (BinaryExpression) stmt.getWhere();
         System.out.println(binaryExpression.getLeftExpression());
         System.out.println(binaryExpression.getRightExpression());
+        System.out.println(binaryExpression instanceof GreaterThan);
+        System.out.println(binaryExpression instanceof GreaterThanEquals);
+
 
         return "success";
     }
@@ -320,6 +345,13 @@ public class SQLParser {
 //        sqlParser.dealer("INSERT INTO person(name) VALUES ('Bob');");
 //        sqlParser.dealer("UPDATE  person  SET  gender = 'male'  WHERE  name = 'Ben'");
 //        sqlParser.dealer("DELETE FROM person WHERE name = 'Bob'");
+
+        Vector<Object> test = new Vector<Object>(4);
+        for(int i = 0; i < 4; i++){
+            test.add(null);
+        }
+        test.setElementAt("1",2);
+        System.out.println(test);
 
     }
 }
