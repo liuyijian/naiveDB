@@ -7,6 +7,7 @@ import java.util.Vector;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.relational.*;
+import net.sf.jsqlparser.schema.Column;
 import storage.Entry;
 import storage.PrimaryKey;
 import storage.Row;
@@ -35,18 +36,90 @@ public class Query {
         tableStorageMap.remove(tableName);
     }
 	
-	public String select(Vector<String> tableNames, Vector<String> attrs, 
-			             Vector<String> joinTableNames, Vector<BinaryExpression> on, 
-			             Vector<Boolean> onAndOr, Vector<BinaryExpression> where, 
-			             Vector<Boolean> whereAndOr) {
+	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> select(
+		Vector<Column> attrs, String tableNameA, String tableNameB, 
+	    Vector<BinaryExpression> on, Vector<Boolean> onAndOr, 
+	    Vector<BinaryExpression> where, Vector<Boolean> whereAndOr) {
 		
 		return null;
 	}
 	
+	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> select(Vector<String> attrs, 
+		String tableName, Vector<BinaryExpression> where, Vector<Boolean> whereAndOr) 
+		throws IOException {
+
+		Storage table = this.tableStorageMap.get(tableName);
+		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> selected = new HashMap<PrimaryKey,  
+															   Entry<PrimaryKey, Row>>();
+
+		if (where.size() == 0) {
+			for (Entry<PrimaryKey, Row> entry : table.getIndex()) {
+				selected.put(entry.key, entry);
+			}
+			return selected;
+		}
+		
+		BinaryExpression first = where.get(0);
+		
+		if (! table.leftAndRightExpressionsAreBothAttrs(first)
+			&& table.checkSinglePrimaryKeyInBinaryExpression(first)
+			!= Storage.SINGLE_PRIMARY_KEY_NOT_EXISTED) {
+			selected = filtratePk(table, table.getIndex(), first);
+		}
+		else {
+			selected = filtrate(table, table.getIndex(), first);
+		}
+		
+		for (int i = 0; i < whereAndOr.size(); ++i) {
+			BinaryExpression expression = where.get(i);
+
+			if (whereAndOr.get(i).equals(Type.EXPRESSION_AND)) {
+				
+				if (! table.leftAndRightExpressionsAreBothAttrs(expression)
+					&& table.checkSinglePrimaryKeyInBinaryExpression(expression)
+					!= Storage.SINGLE_PRIMARY_KEY_NOT_EXISTED) {
+					selected = filtratePk(table, selected, expression);
+				}
+				else {
+					selected = filtrate(table, selected, expression);
+				}
+			}
+			else if (whereAndOr.get(i).equals(Type.EXPRESSION_OR)) {
+				
+				if (! table.leftAndRightExpressionsAreBothAttrs(expression)
+					&& table.checkSinglePrimaryKeyInBinaryExpression(expression)
+					!= Storage.SINGLE_PRIMARY_KEY_NOT_EXISTED) {
+					
+					HashMap<PrimaryKey, Entry<PrimaryKey, Row>> toMerge = 
+						filtratePk(table, table.getIndex(), expression);
+					selected = merge(toMerge, selected);
+				}
+				else {
+					HashMap<PrimaryKey, Entry<PrimaryKey, Row>> toMerge = 
+						filtrate(table, table.getIndex(), expression);
+					selected = merge(toMerge, selected);
+				}
+			}
+		}
+		
+		return selected;
+	}
+	
+	// should be simplified by calling select
 	public Integer delete(String tableName, Vector<BinaryExpression> where, 
 			              Vector<Boolean> whereAndOr) throws IOException {
-		
+
 		Storage table = this.tableStorageMap.get(tableName);
+
+		if (where.size() == 0) {
+			Integer deleteCount = table.getIndex().size();
+			for (Entry<PrimaryKey, Row> entry : table.getIndex()) {
+				entry.value.delete();
+				table.addAvailableRow(entry.value.getOrder());
+			}
+			return deleteCount;
+		}
+		
 		BinaryExpression first = where.get(0);
 		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> toDelete = null;
 		
@@ -100,11 +173,33 @@ public class Query {
 	}
 	
 	public Integer update(String tableName, String columnName, Expression value,
-			              Vector<BinaryExpression> where, Vector<Boolean> whereAndOr) {
+			              Vector<BinaryExpression> where, Vector<Boolean> whereAndOr) 
+	            		  throws IOException {
         // set只能set等于，value类型需要在此函数体内进一步考虑
-		// And 0
-		// Or  1
-		return null;
+		
+		Storage table = this.tableStorageMap.get(tableName);
+		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> selected = this.select(
+			table.getAttributes(), tableName, where, whereAndOr);
+		
+		Integer leftRank = table.getAttributeRank(columnName);
+		Integer rightRank = null;
+		if (table.isAttribute(value.toString())) {
+			rightRank = table.getAttributeRank(value.toString());
+		}
+		
+		if (rightRank != null) {
+			for (Entry<PrimaryKey, Row> entry : selected.values()) {
+				entry.value.updateAttributeByRank(leftRank, rightRank);
+			}
+		}
+		else {
+			Object rightValue = value.toString();
+			for (Entry<PrimaryKey, Row> entry : selected.values()) {
+				entry.value.updateAttributeByValue(leftRank, rightValue);
+			}			
+		}
+		
+		return selected.size();
 	}
 	
 	public Integer insert(String tableName, Vector<Object> row) throws IOException {

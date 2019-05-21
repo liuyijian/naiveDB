@@ -122,6 +122,21 @@ public class Storage {
     	}
     }
     
+    public Vector<String> getAttributes() {
+    	
+    	return this.attrs;
+    }
+    
+    public Integer getAttributeRank(String colName) {
+    	
+    	for (int i = 0; i < this.attrs.size(); ++i) {
+    		if (this.attrs.get(i).equals(colName)) {
+    			return i;
+    		}
+    	}
+    	throw new CustomerException("Storage", "getAttributeRank()" + colName + "is not a col name!");
+    }
+     
     protected void checkNull(Vector<Object> data) {
     	
     	for (int i = 0; i < this.numberOfCol; ++i) {
@@ -156,9 +171,9 @@ public class Storage {
     	}
     }
     
-    protected boolean isAttribute(String attr) {
+    public boolean isAttribute(Object attr) {
     	
-    	return this.attrs.contains(attr);
+    	return attr instanceof String && this.attrs.contains((String) attr);
     }
     
 	public Integer insert(Vector<Object> data) throws IOException {
