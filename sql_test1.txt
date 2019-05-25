@@ -1,0 +1,6 @@
+Auth admin 123456;
+Use database database1;
+Drop table person;
+
+CREATE TABLE person (name String(256) not null, ID Int not null, PRIMARY KEY(ID));
+Show table person;

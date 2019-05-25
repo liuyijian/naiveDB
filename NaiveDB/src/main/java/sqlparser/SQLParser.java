@@ -227,58 +227,70 @@ public class SQLParser {
     public String insertParser(Insert stmt) throws IOException{
 
         String tableName = stmt.getTable().getName();
-        Vector<String> defaultColumnOrder = metaData.metaJson.getAttributesName(tableName);
-        Vector<String> columnOrder= new Vector<>();
-        Vector<Object> row = new Vector<Object>(((ExpressionList)stmt.getItemsList()).getExpressions());
-        Integer insertRowCount;
+        if(metaData.metaJson.hasTable(tableName)){
+            Vector<String> defaultColumnOrder = metaData.metaJson.getAttributesName(tableName);
+            Vector<String> columnOrder= new Vector<>();
+            Vector<Object> row = new Vector<Object>(((ExpressionList)stmt.getItemsList()).getExpressions());
+            Integer insertRowCount;
 
-        for(Column column : stmt.getColumns()){
-            columnOrder.add(column.getColumnName());
-        }
-
-        if (columnOrder.size() == 0){
-            //若无columns则直接把row丢给insert
-            insertRowCount = metaData.metaJson.query.insert(tableName,row);
-        } else{
-            Vector<Object> orderedRow = new Vector<Object>();
-            for(int i = 0; i < defaultColumnOrder.size(); i++){
-                orderedRow.add(null);
+            for(Column column : stmt.getColumns()){
+                columnOrder.add(column.getColumnName());
             }
-            for(int i = 0; i < columnOrder.size(); i++){
-                orderedRow.setElementAt(row.get(i),defaultColumnOrder.indexOf(columnOrder.get(i)));
-            }
-            // 丢给insert orderedRow
-           insertRowCount =  metaData.metaJson.query.insert(tableName,orderedRow);
-        }
 
-        return "insert row" + insertRowCount;
+            if (columnOrder.size() == 0){
+                //若无columns则直接把row丢给insert
+                insertRowCount = metaData.metaJson.query.insert(tableName,row);
+            } else{
+                Vector<Object> orderedRow = new Vector<Object>();
+                for(int i = 0; i < defaultColumnOrder.size(); i++){
+                    orderedRow.add(null);
+                }
+                for(int i = 0; i < columnOrder.size(); i++){
+                    orderedRow.setElementAt(row.get(i),defaultColumnOrder.indexOf(columnOrder.get(i)));
+                }
+                // 丢给insert orderedRow
+                insertRowCount =  metaData.metaJson.query.insert(tableName,orderedRow);
+            }
+
+            return "insert row" + insertRowCount;
+        }
+        return "cannot insert into a non-exist table";
     }
 
     public String deleteParser(Delete stmt){
 
         String tableName = stmt.getTable().getName();
-        Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple = whereParser((BinaryExpression) stmt.getWhere());
-        Integer deleteCount = metaData.metaJson.query.delete(tableName, tuple.first, tuple.second);
-        return "deleteRow : " + deleteCount;
+        if(metaData.metaJson.hasTable(tableName)){
+            Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple = whereParser((BinaryExpression) stmt.getWhere());
+            Integer deleteCount = metaData.metaJson.query.delete(tableName, tuple.first, tuple.second);
+            return "deleteRow : " + deleteCount;
+        }
+        return "cannot delete from a non-exist table";
     }
 
     public String updateParser(Update stmt){
 
         String tableName = stmt.getTables().get(0).getName();
-        Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple = whereParser((BinaryExpression) stmt.getWhere());
-        Integer updateCount = metaData.metaJson.query.update(
-                tableName,
-                stmt.getColumns().get(0).getColumnName(),
-                stmt.getExpressions().get(0),
-                tuple.first,
-                tuple.second
-        );
-        return "updateRow : " + updateCount;
+        if(metaData.metaJson.hasTable(tableName)){
+            Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple = whereParser((BinaryExpression) stmt.getWhere());
+            Integer updateCount = metaData.metaJson.query.update(
+                    tableName,
+                    stmt.getColumns().get(0).getColumnName(),
+                    stmt.getExpressions().get(0),
+                    tuple.first,
+                    tuple.second
+            );
+            return "updateRow : " + updateCount;
+        }
+        return "cannot update a non-exist table";
     }
 
     public Tuple<Vector<BinaryExpression>, Vector<Boolean>> whereParser(BinaryExpression stmt){
         Vector<BinaryExpression> binaryExpressions = new Vector<BinaryExpression>();
         Vector<Boolean> booleanVector = new Vector<>();
+        if(stmt == null){
+            return new Tuple<>(binaryExpressions,booleanVector);
+        }
         while(true){
             if(stmt instanceof AndExpression){
                 binaryExpressions.insertElementAt((BinaryExpression)stmt.getRightExpression(),0);
@@ -372,11 +384,18 @@ public class SQLParser {
 //        sqlParser.dealer("UPDATE  person  SET  gender = 'male'  WHERE  name = 'Ben'");
 //        sqlParser.dealer("DELETE FROM person WHERE name = 'Bob'");
         try{
-            Statement sqlStatement = CCJSqlParserUtil.parse("update person set name = 'Bob' where ID > 3 or baby <= 5");
-            Update stmt = (Update) sqlStatement;
+            Statement sqlStatement = CCJSqlParserUtil.parse("select person.ID,person.name from person join employee on person.ID = employee.ID");
+            Select stmt1 = (Select) sqlStatement;
 
             SQLParser sqlParser = new SQLParser();
-            sqlParser.updateParser(stmt);
+            PlainSelect stmt = (PlainSelect) stmt1.getSelectBody();
+            Expression expression = stmt.getJoins().get(0).getOnExpression();
+            System.out.println(expression);
+            BinaryExpression binaryExpression = (BinaryExpression) expression;
+            System.out.println(binaryExpression.getLeftExpression() instanceof Column);
+            Column column = (Column)(binaryExpression.getLeftExpression());
+            System.out.println(column.getTable().getName());
+            System.out.println(column.getColumnName());
 
 
         } catch (Exception e){
