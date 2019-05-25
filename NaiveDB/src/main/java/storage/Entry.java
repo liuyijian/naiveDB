@@ -3,8 +3,8 @@ package storage;
 
 public class Entry<Key extends Comparable<Key>, Value> {
 	
-	protected Key   key;
-	protected Value value;
+	public Key   key;
+	public Value value;
 	
 	public Entry(Key key, Value value) {
 		

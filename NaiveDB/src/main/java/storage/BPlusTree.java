@@ -136,6 +136,11 @@ public class BPlusTree<Key extends Comparable<Key>, Value>
     		this.root = new ExternalNode<Key, Value>(this.n, null, null);
     	}
     }
+    
+    public int size() {
+    	
+    	return this.size;
+    }
 
 	@Override
 	public Iterator<Entry<Key, Value>> iterator() {

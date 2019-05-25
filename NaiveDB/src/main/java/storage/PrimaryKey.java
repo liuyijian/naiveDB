@@ -19,6 +19,17 @@ public class PrimaryKey implements Comparable<PrimaryKey> {
 		}
 	}
 	
+	public PrimaryKey(Integer type, Object attr) {
+		
+		this.types = new Vector<Integer>();
+		this.types.add(type);
+		this.attrs = new Vector<Object>();
+		this.attrs.add(attr);
+		if (attrs.contains(null)) {
+			throw new CustomerException("PrimaryKey", "PrimaryKey(types, attrs): attrs.contains(null)");
+		}
+	}
+	
 	public PrimaryKey(Vector<Integer> types, Vector<Object> data, Vector<Integer> pkIndexes) {
 		
 		this.types = types;
@@ -92,6 +103,20 @@ public class PrimaryKey implements Comparable<PrimaryKey> {
 		}
 		
 		return 0;
+	}
+	
+	public boolean isSinglePrimaryKey() {
+		
+		return this.types.size() == 1;
+	}
+	
+	public Integer getSingleAttrType() {
+		
+		if (!this.isSinglePrimaryKey()) {
+			throw new CustomerException("PrimaryKey", "getSingleAttrType(): pk is not single.");
+		}
+		
+		return this.types.get(0);
 	}
 	
 	@Override

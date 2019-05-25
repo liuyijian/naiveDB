@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Vector;
 
+import util.CustomerException;
+
 
 public class Row {
 	
@@ -112,6 +114,130 @@ public class Row {
 		
 		this.isAvailable = false;
 		this.data  	     = data;
+		for (int i = 0; i < storage.numberOfCol; ++i) {
+			this.isNull.set(i, this.data.get(i) == null);
+		}
+		
+		Vector<Object> pkAttrs = new Vector<Object>();
+		for (int i  = 0; i < storage.pkIndexes.size(); ++i) {
+			pkAttrs.add(this.get(storage.pkIndexes.get(i)));
+		}
+		this.pks = new PrimaryKey(storage.pkTypes, pkAttrs);
+		
+		this.isModified = true;
+	}
+	
+	protected void tryToConvertAndAssignByRank(Integer leftRank, Integer rightRank) {
+		
+		Integer leftType = this.storage.types.get(leftRank);
+		Integer rightType = this.storage.types.get(rightRank);
+		
+		if (leftType.equals(rightType)) {
+			this.data.set(leftRank, this.data.get(rightRank));
+		}
+		else if (leftType == Type.TYPE_STRING || rightType == Type.TYPE_STRING) {
+			throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
+		}
+		else {
+			Object rightValue = this.data.get(rightRank);
+			if (leftType == Type.TYPE_INT) {
+				this.data.set(leftRank, rightValue == null ? 
+					null : Integer.valueOf(rightValue.toString()));
+			}
+			else if (leftType == Type.TYPE_LONG) {
+				this.data.set(leftRank, rightValue == null ? 
+					null : Long.valueOf(rightValue.toString()));				
+			}
+			else if (leftType == Type.TYPE_FLOAT) {
+				this.data.set(leftRank, rightValue == null ? 
+					null : Float.valueOf(rightValue.toString()));
+			}
+			else if (leftType == Type.TYPE_DOUBLE) {
+				this.data.set(leftRank, rightValue == null ? 
+					null : Double.valueOf(rightValue.toString()));
+			}
+		}
+	}
+	
+	protected void tryToConvertAndAssignByValue(Integer leftRank, Object rightValue) {
+		
+		Integer leftType = this.storage.types.get(leftRank);
+		Integer rightType = null;
+		if (rightValue instanceof String) {
+			rightType = Type.TYPE_STRING;
+		}
+		else if (rightValue instanceof Integer) {
+			rightType = Type.TYPE_INT;
+		}
+		else if (rightValue instanceof Long) {
+			rightType = Type.TYPE_LONG;
+		}
+		else if (rightValue instanceof Float) {
+			rightType = Type.TYPE_FLOAT;
+		}
+		else if (rightValue instanceof Double) {
+			rightType = Type.TYPE_DOUBLE;
+		}
+		
+		if (leftType.equals(rightType)) {
+			this.data.set(leftRank, rightValue);
+		}
+		else if (leftType == Type.TYPE_STRING || rightType == Type.TYPE_STRING) {
+			throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
+		}
+		else {
+			if (leftType == Type.TYPE_INT) {
+				this.data.set(leftRank, rightValue == null ? 
+					null : Integer.valueOf(rightValue.toString()));
+			}
+			else if (leftType == Type.TYPE_LONG) {
+				this.data.set(leftRank, rightValue == null ? 
+					null : Long.valueOf(rightValue.toString()));				
+			}
+			else if (leftType == Type.TYPE_FLOAT) {
+				this.data.set(leftRank, rightValue == null ? 
+					null : Float.valueOf(rightValue.toString()));
+			}
+			else if (leftType == Type.TYPE_DOUBLE) {
+				this.data.set(leftRank, rightValue == null ? 
+					null : Double.valueOf(rightValue.toString()));
+			}
+		}
+	}
+	
+	public void updateAttributeByRank(Integer leftRank, Integer rightRank) 
+								      throws IOException {
+		
+		if (! this.isInMemory) {
+			this.readFromFile();
+		}
+		
+		// 注意 tryToConvert 的地方
+		this.isAvailable = false;
+		this.tryToConvertAndAssignByRank(leftRank, rightRank);
+		for (int i = 0; i < storage.numberOfCol; ++i) {
+			this.isNull.set(i, this.data.get(i) == null);
+		}
+		
+		Vector<Object> pkAttrs = new Vector<Object>();
+		for (int i  = 0; i < storage.pkIndexes.size(); ++i) {
+			pkAttrs.add(this.get(storage.pkIndexes.get(i)));
+		}
+		this.pks = new PrimaryKey(storage.pkTypes, pkAttrs);
+		
+		this.isModified = true;
+	}
+	
+	public void updateAttributeByValue(Integer leftRank, Object rightValue) 
+			                           throws IOException {
+		
+		if (! this.isInMemory) {
+			this.readFromFile();
+		}
+		
+		// 注意 tryToConvert 的地方 throw
+		this.isAvailable = false;
+		this.tryToConvertAndAssignByValue(leftRank, rightValue);
 		for (int i = 0; i < storage.numberOfCol; ++i) {
 			this.isNull.set(i, this.data.get(i) == null);
 		}
@@ -266,6 +392,11 @@ public class Row {
 		}
 		
 		this.isModified = false;
+	}
+	
+	public int getOrder() {
+		
+		return this.order;
 	}
 	
 	@Override

@@ -8,9 +8,11 @@ import java.util.HashMap;
 import java.util.Stack;
 import java.util.Vector;
 
+import net.sf.jsqlparser.expression.BinaryExpression;
 import util.CustomerException;
 
 
+// TODO: rename to Table
 public class Storage {
 
 	protected static final Integer INITIAL_NUMBER_OF_ROW = 100;
@@ -18,6 +20,10 @@ public class Storage {
 
 	public static final Integer CONSTRUCT_FROM_EXISTED_DB = 1;
 	public static final Integer CONSTRUCT_FROM_NEW_DB     = 2;
+	
+    public static final int SINGLE_PRIMARY_KEY_IN_LEFT_EXPRESSION = 3;
+    public static final int SINGLE_PRIMARY_KEY_IN_RIGHT_EXPRESSION = 4;
+    public static final int SINGLE_PRIMARY_KEY_NOT_EXISTED = 5;
 	
 	protected String           fileName;
 	protected RandomAccessFile file;
@@ -116,6 +122,21 @@ public class Storage {
     	}
     }
     
+    public Vector<String> getAttributes() {
+    	
+    	return this.attrs;
+    }
+    
+    public Integer getAttributeRank(String colName) {
+    	
+    	for (int i = 0; i < this.attrs.size(); ++i) {
+    		if (this.attrs.get(i).equals(colName)) {
+    			return i;
+    		}
+    	}
+    	throw new CustomerException("Storage", "getAttributeRank()" + colName + "is not a col name!");
+    }
+     
     protected void checkNull(Vector<Object> data) {
     	
     	for (int i = 0; i < this.numberOfCol; ++i) {
@@ -150,9 +171,9 @@ public class Storage {
     	}
     }
     
-    protected boolean isAttribute(String attr) {
+    public boolean isAttribute(Object attr) {
     	
-    	return this.attrs.contains(attr);
+    	return attr instanceof String && this.attrs.contains((String) attr);
     }
     
 	public Integer insert(Vector<Object> data) throws IOException {
@@ -712,6 +733,11 @@ public class Storage {
 			this.availableRows.add(entry.value.order);
 		}
     }
+    
+    public void addAvailableRow(int order) {
+    	
+    	this.availableRows.add(order);
+    }
 	
     protected void initFileRow() throws IOException {
     	
@@ -794,4 +820,44 @@ public class Storage {
     		out.writeChar(ch);
     	}
     }
+    
+    public boolean primaryKeyIsSingle() {
+    	
+    	return this.pkAttrs.size() == 1;
+    }
+    
+    public int checkSinglePrimaryKeyInBinaryExpression(BinaryExpression binaryExpression) {
+    	
+    	String left = binaryExpression.getLeftExpression().toString();
+    	String right = binaryExpression.getRightExpression().toString();
+    	if (this.pkAttrs.contains(left)) {
+    		return SINGLE_PRIMARY_KEY_IN_LEFT_EXPRESSION;
+    	}
+    	else if (this.pkAttrs.contains(right)) {
+    		return SINGLE_PRIMARY_KEY_IN_RIGHT_EXPRESSION;
+    	}
+    	else {
+    		return SINGLE_PRIMARY_KEY_NOT_EXISTED;
+    	}
+    }
+    
+    public boolean leftAndRightExpressionsAreBothAttrs(BinaryExpression binaryExpression) {
+    	
+    	return this.isAttribute(binaryExpression.getLeftExpression().toString()) 
+    		   && this.isAttribute(binaryExpression.getRightExpression().toString());
+    }
+    
+	public Integer getSingleAttrType() {
+		
+		if (!this.primaryKeyIsSingle()) {
+			throw new CustomerException("Storage", "getSingleAttrType(): pk is not single.");
+		}
+		
+		return this.pkTypes.get(0);
+	}
+	
+	public BPlusTree<PrimaryKey, Row> getIndex() {
+		
+		return this.index;
+	}
 }
