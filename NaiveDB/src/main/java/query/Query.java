@@ -40,7 +40,7 @@ public class Query {
 	
 	public TreeSet<JointRow> select(String tableNameA, String tableNameB, 
 	    Vector<BinaryExpression> on, Vector<Boolean> onAndOr, 
-	    Vector<BinaryExpression> where, Vector<Boolean> whereAndOr) {
+	    Vector<BinaryExpression> where, Vector<Boolean> whereAndOr) throws IOException {
 		
 		Storage tableA = this.tableStorageMap.get(tableNameA);
 		Storage tableB = this.tableStorageMap.get(tableNameB);
@@ -81,7 +81,8 @@ public class Query {
 				else if (onAndOr.get(i).equals(Type.EXPRESSION_OR)) {
 					for (Entry<PrimaryKey, Row> entryA : tableA.getIndex()) {
 						for (Entry<PrimaryKey, Row> entryB : tableB.getIndex()) {
-							JointRow jointRow = filtrateJointRow(entryA, onExpression, entryB);
+							JointRow jointRow = filtrateJointRow(entryA, onExpression, 
+									                             entryB);
 							if (jointRow != null) {
 								selected.add(jointRow);	
 							}
@@ -132,9 +133,11 @@ public class Query {
 	
 	protected static JointRow filtrateJointRow(Entry<PrimaryKey, Row> first,
 											   BinaryExpression binaryExpression,
-			                                   Entry<PrimaryKey, Row> second) {
+			                                   Entry<PrimaryKey, Row> second) 
+			                                   throws IOException {
 		
-		return null;
+		JointRow ret = new JointRow(first, second);
+		return ret.satisfy(binaryExpression) ? ret : null;
 	}
 	
 	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> select(String tableName, 

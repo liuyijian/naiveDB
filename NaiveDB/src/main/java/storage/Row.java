@@ -9,7 +9,7 @@ import util.CustomerException;
 
 public class Row implements Comparable<Row> {
 	
-	protected Storage         storage;
+	public    Storage         storage;
 	protected int             order;
 	protected long            offset;
 
