@@ -2,6 +2,7 @@ package query;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.TreeSet;
 import java.util.Vector;
 
 import net.sf.jsqlparser.expression.BinaryExpression;
@@ -9,6 +10,7 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.schema.Column;
 import storage.Entry;
+import storage.JointRow;
 import storage.PrimaryKey;
 import storage.Row;
 import storage.Storage;
@@ -36,17 +38,107 @@ public class Query {
         tableStorageMap.remove(tableName);
     }
 	
-	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> select(
-		Vector<Column> attrs, String tableNameA, String tableNameB, 
+	public TreeSet<JointRow> select(String tableNameA, String tableNameB, 
 	    Vector<BinaryExpression> on, Vector<Boolean> onAndOr, 
 	    Vector<BinaryExpression> where, Vector<Boolean> whereAndOr) {
+		
+		Storage tableA = this.tableStorageMap.get(tableNameA);
+		Storage tableB = this.tableStorageMap.get(tableNameB);
+		TreeSet<JointRow> selected = new TreeSet<JointRow>();
+
+		if (on.size() == 0) {
+			for (Entry<PrimaryKey, Row> entryA : tableA.getIndex()) {
+				for (Entry<PrimaryKey, Row> entryB : tableB.getIndex()) {
+					selected.add(new JointRow(entryA, entryB));	
+				}			
+			}
+		}
+		else {
+			for (Entry<PrimaryKey, Row> entryA : tableA.getIndex()) {
+				for (Entry<PrimaryKey, Row> entryB : tableB.getIndex()) {
+					JointRow jointRow = filtrateJointRow(entryA, on.get(0), entryB);
+					if (jointRow != null) {
+						selected.add(jointRow);	
+					}
+				}			
+			}
+			
+			for (int i = 0; i < onAndOr.size(); ++i) {
+				BinaryExpression onExpression = on.get(i + 1);
+				
+				if (onAndOr.get(i).equals(Type.EXPRESSION_AND)) {
+					TreeSet<JointRow> newSelected = new TreeSet<JointRow>();
+					for (JointRow rowInSelected : selected) {
+						JointRow jointRow = filtrateJointRow(rowInSelected.rowA, 
+								                             onExpression,
+								                             rowInSelected.rowB);
+						if (jointRow != null) {
+							newSelected.add(jointRow);	
+						}
+					}
+					selected = newSelected;
+				}
+				else if (onAndOr.get(i).equals(Type.EXPRESSION_OR)) {
+					for (Entry<PrimaryKey, Row> entryA : tableA.getIndex()) {
+						for (Entry<PrimaryKey, Row> entryB : tableB.getIndex()) {
+							JointRow jointRow = filtrateJointRow(entryA, onExpression, entryB);
+							if (jointRow != null) {
+								selected.add(jointRow);	
+							}
+						}			
+					}
+				}
+			}
+		}
+		
+		if (where.size() == 0) {
+			return selected;
+		}
+		
+		// where.size() != 0
+		TreeSet<JointRow> originalSelected = selected;
+		
+		TreeSet<JointRow> newSelected = new TreeSet<JointRow>();
+		for (JointRow rowInSelected : originalSelected) {
+			if (rowInSelected.satisfy(where.get(0))) {
+				newSelected.add(rowInSelected);
+			}
+		}
+		selected = newSelected;
+		
+		for (int i = 0; i < whereAndOr.size(); ++i) {
+			BinaryExpression whereExpression = where.get(i + 1);
+			
+			if (whereAndOr.get(i).equals(Type.EXPRESSION_AND)) {
+				newSelected = new TreeSet<JointRow>();
+				for (JointRow rowInSelected : selected) {
+					if (rowInSelected.satisfy(whereExpression)) {
+						newSelected.add(rowInSelected);
+					}
+				}
+				selected = newSelected;
+			}
+			else if (whereAndOr.get(i).equals(Type.EXPRESSION_OR)) {
+				for (JointRow rowInSelected : originalSelected) {
+					if (rowInSelected.satisfy(whereExpression)) {
+						selected.add(rowInSelected);
+					}
+				}
+			}
+		}
+		
+		return selected;
+	}
+	
+	protected static JointRow filtrateJointRow(Entry<PrimaryKey, Row> first,
+											   BinaryExpression binaryExpression,
+			                                   Entry<PrimaryKey, Row> second) {
 		
 		return null;
 	}
 	
-	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> select(Vector<String> attrs, 
-		String tableName, Vector<BinaryExpression> where, Vector<Boolean> whereAndOr) 
-		throws IOException {
+	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> select(String tableName, 
+		Vector<BinaryExpression> where, Vector<Boolean> whereAndOr) throws IOException {
 
 		Storage table = this.tableStorageMap.get(tableName);
 		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> selected = new HashMap<PrimaryKey,  
@@ -179,7 +271,7 @@ public class Query {
 		
 		Storage table = this.tableStorageMap.get(tableName);
 		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> selected = this.select(
-			table.getAttributes(), tableName, where, whereAndOr);
+			tableName, where, whereAndOr);
 		
 		Integer leftRank = table.getAttributeRank(columnName);
 		Integer rightRank = null;

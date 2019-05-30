@@ -7,7 +7,7 @@ import java.util.Vector;
 import util.CustomerException;
 
 
-public class Row {
+public class Row implements Comparable<Row> {
 	
 	protected Storage         storage;
 	protected int             order;
@@ -405,5 +405,70 @@ public class Row {
 		return "<" + this.isAvailable + ", " + (this.data == null ? "null" : 
 			   this.data.toString()) + ", " + (this.isNull == null ? "null" : 
 			   this.isNull.toString()) + ">";
+	}
+
+	@Override
+	public int compareTo(Row row) {
+		
+		if (! this.isInMemory) {
+			try {
+				this.readFromFile();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		for (int i = 0; i < this.data.size(); ++i) {
+			if (this.isNull.get(i) && row.isNull.get(i)) {
+				continue;
+			}
+			else if (this.isNull.get(i) && !row.isNull.get(i)) {
+				return -1;
+			}
+			else if (!this.isNull.get(i) && row.isNull.get(i)) {
+				return 1;
+			}
+			
+			Object left = this.data.get(i);
+			Object right = row.data.get(i);
+			if (storage.types.get(i) == Type.TYPE_INT) {
+				int result = ((Integer) left).compareTo((Integer) right);
+				if (result == 0) {
+					continue;
+				}
+				return result;
+    		}
+    		else if (storage.types.get(i) == Type.TYPE_LONG) {
+    			int result = ((Long) left).compareTo((Long) right);
+				if (result == 0) {
+					continue;
+				}
+				return result;
+    		}
+    		else if (storage.types.get(i) == Type.TYPE_FLOAT) {
+    			int result = ((Float) left).compareTo((Float) right);
+				if (result == 0) {
+					continue;
+				}
+				return result;
+    		}
+    		else if (storage.types.get(i) == Type.TYPE_DOUBLE) {
+    			int result = ((Double) left).compareTo((Double) right);
+				if (result == 0) {
+					continue;
+				}
+				return result;
+    		}
+    		else if (storage.types.get(i) == Type.TYPE_STRING) {
+    			int result = ((String) left).compareTo((String) right);
+				if (result == 0) {
+					continue;
+				}
+				return result;
+    		}
+		}
+		
+		return 0;
 	}
 }
