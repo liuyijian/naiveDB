@@ -13,6 +13,7 @@ import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.ItemsList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
+import net.sf.jsqlparser.schema.Table;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.expression.BinaryExpression;
@@ -26,6 +27,7 @@ import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.update.Update;
 
+
 import java.io.IOException;
 import java.util.*;
 
@@ -34,9 +36,7 @@ import org.json.JSONObject;
 import metadata.MetaData;
 import metadata.TableInfo;
 
-import storage.Storage;
-import storage.Type;
-
+import storage.*;
 
 
 public class SQLParser {
@@ -188,41 +188,46 @@ public class SQLParser {
         }
     }
 
-    public String selectParser(Select stmt){
+    public String selectParser (Select stmt) throws IOException{
         // 默认用PlainSelect，不支持UNION，order by
         PlainSelect plainStmt = (PlainSelect) stmt.getSelectBody();
-
+        //拿到列名
         System.out.println(plainStmt.getSelectItems());
-        System.out.println(plainStmt.getFromItem());
+        // 拿到表名
+        String tableName = ((Table)plainStmt.getFromItem()).getName();
+        // 拿到where
+        Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple = whereParser((BinaryExpression) plainStmt.getWhere());
 
         // 只涉及两张表的join
         List<Join> joinStmts = plainStmt.getJoins();
         if (joinStmts != null){
+            // 双表
             Join joinStmt = joinStmts.get(0);
-            System.out.println(joinStmt.getRightItem());
-            System.out.println(joinStmt.getOnExpression());
-            BinaryExpression binaryExpression = (BinaryExpression) joinStmt.getOnExpression();
-            if (binaryExpression != null){
-                System.out.println(binaryExpression.getLeftExpression());
-                System.out.println(binaryExpression.getRightExpression());
-            }
+            String secondTableName = ((Table)joinStmt.getRightItem()).getName();
+            Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple2 = whereParser((BinaryExpression) joinStmt.getOnExpression());
+            TreeSet<JointRow> answer = metaData.metaJson.query.select(tableName,secondTableName,tuple2.first,tuple2.second,tuple.first,tuple.second);
+            return answer.toString();
+        } else{
+            //单表
+            HashMap<PrimaryKey, Entry<PrimaryKey, Row>> answer = metaData.metaJson.query.select(tableName, tuple.first, tuple.second);
+            return answer.toString();
         }
 
-        System.out.println(plainStmt.getWhere());
 
-        BinaryExpression binaryExpression = (BinaryExpression) plainStmt.getWhere();
-        if (binaryExpression != null){
-            System.out.println(binaryExpression.getLeftExpression());
-            System.out.println(binaryExpression.getRightExpression());
-        }
+
+//        BinaryExpression binaryExpression = (BinaryExpression) plainStmt.getWhere();
+//        if (binaryExpression != null){
+//            System.out.println(binaryExpression.getLeftExpression());
+//            System.out.println(binaryExpression.getRightExpression());
+//        }
 
         // 判断此Expression 是不是 GreaterThan，Greater .. 的扩展来判断中间的比较符号
 
 
-        System.out.println(plainStmt.getGroupBy());
-        System.out.println(plainStmt.getHaving());
-
-        return "success";
+//        System.out.println(plainStmt.getGroupBy());
+//        System.out.println(plainStmt.getHaving());
+//
+//        return "success";
     }
 
     public String insertParser(Insert stmt) throws IOException{
