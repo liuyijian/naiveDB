@@ -949,7 +949,7 @@ class ExternalNode<Key extends Comparable<Key>, Value> extends Node<Key, Value> 
 
 		for (int i = 1; i < this.size; ++i) {
 			this.keys[i - 1] = this.keys[i]; 
-			this.values[i - 1] = this.keys[i];
+			this.values[i - 1] = this.values[i];
 		}
 		
 		this.keys[this.size - 1] = null;

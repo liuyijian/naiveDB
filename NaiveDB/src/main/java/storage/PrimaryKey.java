@@ -19,15 +19,37 @@ public class PrimaryKey implements Comparable<PrimaryKey> {
 		}
 	}
 	
+	// attr's type should be converted in constructor
 	public PrimaryKey(Integer type, Object attr) {
 		
 		this.types = new Vector<Integer>();
 		this.types.add(type);
 		this.attrs = new Vector<Object>();
-		this.attrs.add(attr);
+		this.attrs.add(convertType(type, attr));
 		if (attrs.contains(null)) {
 			throw new CustomerException("PrimaryKey", "PrimaryKey(types, attrs): attrs.contains(null)");
 		}
+	}
+	
+	protected static Object convertType(Integer type, Object attr) {
+		
+		if (type == Type.TYPE_INT) {
+			return Integer.valueOf(attr.toString());
+		}
+		else if (type == Type.TYPE_LONG) {
+			return Long.valueOf(attr.toString());
+		}
+		else if (type == Type.TYPE_FLOAT) {
+			return Float.valueOf(attr.toString());
+		}
+		else if (type == Type.TYPE_DOUBLE) {
+			return Double.valueOf(attr.toString());
+		}
+		else if (type == Type.TYPE_STRING) {
+			return attr.toString();
+		}    			
+
+		throw new CustomerException("PrimaryKey", "convertType(types, attrs): failed");
 	}
 	
 	public PrimaryKey(Vector<Integer> types, Vector<Object> data, Vector<Integer> pkIndexes) {

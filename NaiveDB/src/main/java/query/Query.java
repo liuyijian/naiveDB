@@ -227,7 +227,7 @@ public class Query {
 		}
 		
 		for (int i = 0; i < whereAndOr.size(); ++i) {
-			BinaryExpression expression = where.get(i);
+			BinaryExpression expression = where.get(i + 1);
 
 			if (whereAndOr.get(i).equals(Type.EXPRESSION_AND)) {
 				

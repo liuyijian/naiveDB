@@ -150,7 +150,7 @@ public class Storage {
     	}
     }
     
-    protected void checkType(Vector<Object> data) {
+    protected void convertType(Vector<Object> data) {
     	
 		for (int i = 0; i < this.numberOfCol; ++i) {
     		try {
@@ -171,7 +171,7 @@ public class Storage {
         		}    			
     		}
     		catch (Exception e) {
-        		throw new CustomerException("Storage", "checkType(): " + data.get(i) + "has a wrong type!");    			
+        		throw new CustomerException("Storage", "convertType(): " + data.get(i) + "has a wrong type!");    			
     		}
     	}
     }
@@ -184,7 +184,7 @@ public class Storage {
 	public Integer insert(Vector<Object> data) throws IOException {
 	
 		this.checkNull(data);
-		this.checkType(data);
+		this.convertType(data);
 		
 		// throw when pks in data contain null value
 		PrimaryKey pk = new PrimaryKey(this.pkTypes, data, this.pkIndexes);
@@ -212,7 +212,7 @@ public class Storage {
 		row.update(data);
 		
 		boolean isSuccessful = this.index.insert(pk, row);
-		if (! isSuccessful) {
+		if (! isSuccessful) { // pk is already existed in index
 			
 			row.delete();
     		this.availableRows.add(row.order);
@@ -675,7 +675,7 @@ public class Storage {
     	ResultSet<PrimaryKey, Row> resultSet = this.index.delete(key);
     	Vector<Entry<PrimaryKey, Row>> entries = resultSet.getResultSet();
     	
-    	for (Entry<PrimaryKey, Row> entry : entries) {
+		for (Entry<PrimaryKey, Row> entry : entries) {
     		
     		entry.value.delete();
     		this.availableRows.add(entry.value.order);
@@ -833,8 +833,8 @@ public class Storage {
     
     public int checkSinglePrimaryKeyInBinaryExpression(BinaryExpression binaryExpression) {
     	
-    	String left = binaryExpression.getLeftExpression().toString();
-    	String right = binaryExpression.getRightExpression().toString();
+    	String left = binaryExpression.getLeftExpression().toString().toUpperCase();
+    	String right = binaryExpression.getRightExpression().toString().toUpperCase();
     	if (this.pkAttrs.contains(left)) {
     		return SINGLE_PRIMARY_KEY_IN_LEFT_EXPRESSION;
     	}
@@ -848,8 +848,8 @@ public class Storage {
     
     public boolean leftAndRightExpressionsAreBothAttrs(BinaryExpression binaryExpression) {
     	
-    	return this.isAttribute(binaryExpression.getLeftExpression().toString()) 
-    		   && this.isAttribute(binaryExpression.getRightExpression().toString());
+    	return this.isAttribute(binaryExpression.getLeftExpression().toString().toUpperCase()) 
+    		   && this.isAttribute(binaryExpression.getRightExpression().toString().toUpperCase());
     }
     
 	public Integer getSingleAttrType() {
