@@ -256,7 +256,7 @@ public class Row implements Comparable<Row> {
 		if (! this.isInMemory) {
 			this.readFromFile();
 		}
-		
+
 		this.isAvailable = true;
 		this.data = new Vector<Object>();
 		int numberOfCol = this.storage.numberOfCol;

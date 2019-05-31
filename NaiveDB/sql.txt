@@ -1,11 +1,10 @@
-Show databases;
-Use database database1;
-Auth admin 12345;
 auth admin 123456;
-Create database database3;
-Drop database database3;
 use database database1;
-Show database database1;
 Drop table person;
 CREATE TABLE person (name String(256) not null, ID Int not null, PRIMARY KEY(ID));
-Show table person;
+insert into person values ('lls', 0);
+insert into person values ('lyj', 1);
+insert into person values ('syr', 2);
+delete from person where ID = 1;
+delete from person;
+delete from person;

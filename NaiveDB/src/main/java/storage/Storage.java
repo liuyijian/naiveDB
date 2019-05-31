@@ -64,6 +64,9 @@ public class Storage {
 		
 		this.types = types;
 		this.attrs = attrs;
+		for (String attr : this.attrs) {
+			attr = attr.toUpperCase();
+		}
 		this.pkTypes = pkTypes;
 		this.pkAttrs = pkAttrs;
 		this.pkIndexes = new Vector<Integer>();
@@ -150,24 +153,26 @@ public class Storage {
     protected void checkType(Vector<Object> data) {
     	
 		for (int i = 0; i < this.numberOfCol; ++i) {
-    		
-    		if (data.get(i) instanceof Integer && this.types.get(i) == Type.TYPE_INT) {
-    			continue;
+    		try {
+        		if (this.types.get(i) == Type.TYPE_INT) {
+        			data.set(i, Integer.valueOf(data.get(i).toString()));
+        		}
+        		else if (this.types.get(i) == Type.TYPE_LONG) {
+        			data.set(i, Long.valueOf(data.get(i).toString()));
+        		}
+        		else if (this.types.get(i) == Type.TYPE_FLOAT) {
+        			data.set(i, Float.valueOf(data.get(i).toString()));
+        		}
+        		else if (this.types.get(i) == Type.TYPE_DOUBLE) {
+        			data.set(i, Double.valueOf(data.get(i).toString()));
+        		}
+        		else if (this.types.get(i) == Type.TYPE_STRING) {
+        			data.set(i, data.get(i).toString());
+        		}    			
     		}
-    		if (data.get(i) instanceof Long && this.types.get(i) == Type.TYPE_LONG) {
-    			continue;
+    		catch (Exception e) {
+        		throw new CustomerException("Storage", "checkType(): " + data.get(i) + "has a wrong type!");    			
     		}
-    		if (data.get(i) instanceof Float && this.types.get(i) == Type.TYPE_FLOAT) {
-    			continue;
-    		}
-    		if (data.get(i) instanceof Double && this.types.get(i) == Type.TYPE_DOUBLE) {
-    			continue;
-    		}
-    		if (data.get(i) instanceof String && this.types.get(i) == Type.TYPE_STRING) {
-    			continue;
-    		}
-
-    		throw new CustomerException("Storage", "checkType(): " + data.get(i) + "has a wrong type!");
     	}
     }
     

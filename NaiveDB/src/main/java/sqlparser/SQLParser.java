@@ -2,7 +2,6 @@ package sqlparser;
 
 
 
-import javafx.util.Pair;
 import metadata.MetaJson;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;

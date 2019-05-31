@@ -209,8 +209,7 @@ public class Query {
 		if (where.size() == 0) {
 			Integer deleteCount = table.getIndex().size();
 			for (Entry<PrimaryKey, Row> entry : table.getIndex()) {
-				entry.value.delete();
-				table.addAvailableRow(entry.value.getOrder());
+				table.deleteEqualPk(entry.key);
 			}
 			return deleteCount;
 		}
@@ -260,8 +259,7 @@ public class Query {
 		}
 		
 		for (Entry<PrimaryKey, Row> entry : toDelete.values()) {
-			entry.value.delete();
-			table.addAvailableRow(entry.value.getOrder());
+			table.deleteEqualPk(entry.key);
 		}
 		
 		return toDelete.size();
