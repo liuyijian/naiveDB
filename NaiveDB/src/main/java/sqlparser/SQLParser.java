@@ -111,7 +111,8 @@ public class SQLParser {
         catch (IOException e){
             return "error";
         }
-        catch (JSQLParserException e){
+        catch (Exception e){
+            e.printStackTrace();
             return "error";
         }
     }
@@ -232,11 +233,13 @@ public class SQLParser {
             Vector<String> columnOrder= new Vector<>();
             Vector<Object> row = new Vector<Object>(((ExpressionList)stmt.getItemsList()).getExpressions());
             Integer insertRowCount;
+            try {
+                for(Column column : stmt.getColumns()){
+                    columnOrder.add(column.getColumnName());
+                }
+            } catch (Exception e){
 
-            for(Column column : stmt.getColumns()){
-                columnOrder.add(column.getColumnName());
             }
-
             if (columnOrder.size() == 0){
                 //若无columns则直接把row丢给insert
                 insertRowCount = metaData.metaJson.query.insert(tableName,row);
@@ -257,7 +260,7 @@ public class SQLParser {
         return "cannot insert into a non-exist table";
     }
 
-    public String deleteParser(Delete stmt){
+    public String deleteParser(Delete stmt) throws IOException{
 
         String tableName = stmt.getTable().getName();
         if(metaData.metaJson.hasTable(tableName)){
@@ -268,7 +271,7 @@ public class SQLParser {
         return "cannot delete from a non-exist table";
     }
 
-    public String updateParser(Update stmt){
+    public String updateParser(Update stmt) throws IOException{
 
         String tableName = stmt.getTables().get(0).getName();
         if(metaData.metaJson.hasTable(tableName)){
