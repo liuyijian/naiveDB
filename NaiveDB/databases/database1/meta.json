@@ -1,1 +1,1 @@
-{"person":{"types":[7,3],"filepath":"databases/database1/person.db","offsets":[512,4],"pktypes":[3],"notnull":[true,true],"pkattrs":["ID"],"attrs":["name","ID"]}}
+{"person":{"types":[7,7],"filepath":"databases/database1/person.db","offsets":[512,40],"pktypes":[7],"notnull":[true,true],"pkattrs":["ID"],"attrs":["NAME","ID"]}}

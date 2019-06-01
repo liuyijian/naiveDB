@@ -5,10 +5,16 @@ import java.util.Vector;
 import util.CustomerException;
 
 
-public class PrimaryKey implements Comparable<PrimaryKey> {
+public class PrimaryKey implements Comparable<PrimaryKey>, Cloneable {
 	
 	protected Vector<Integer> types;
 	protected Vector<Object>  attrs;
+	
+	protected PrimaryKey() {
+		
+		this.types = new Vector<Integer>();
+		this.attrs = new Vector<Object>();
+	}
 	
 	public PrimaryKey(Vector<Integer> types, Vector<Object> attrs) {
 		
@@ -33,19 +39,19 @@ public class PrimaryKey implements Comparable<PrimaryKey> {
 	
 	protected static Object convertType(Integer type, Object attr) {
 		
-		if (type == Type.TYPE_INT) {
+		if (type.equals(Type.TYPE_INT)) {
 			return Integer.valueOf(attr.toString());
 		}
-		else if (type == Type.TYPE_LONG) {
+		else if (type.equals(Type.TYPE_LONG)) {
 			return Long.valueOf(attr.toString());
 		}
-		else if (type == Type.TYPE_FLOAT) {
+		else if (type.equals(Type.TYPE_FLOAT)) {
 			return Float.valueOf(attr.toString());
 		}
-		else if (type == Type.TYPE_DOUBLE) {
+		else if (type.equals(Type.TYPE_DOUBLE)) {
 			return Double.valueOf(attr.toString());
 		}
-		else if (type == Type.TYPE_STRING) {
+		else if (type.equals(Type.TYPE_STRING)) {
 			return attr.toString();
 		}    			
 
@@ -64,6 +70,26 @@ public class PrimaryKey implements Comparable<PrimaryKey> {
 		}
 	}
 
+	public void setAttribute(int rank, Object value) {
+		
+		Integer type = this.types.get(rank);
+		if (type.equals(Type.TYPE_INT)) {
+			this.attrs.set(rank, Integer.valueOf(value.toString()));
+		}
+		else if (type.equals(Type.TYPE_LONG)) {
+			this.attrs.set(rank, Long.valueOf(value.toString()));
+		}
+		else if (type.equals(Type.TYPE_FLOAT)) {
+			this.attrs.set(rank, Float.valueOf(value.toString()));
+		}
+		else if (type.equals(Type.TYPE_DOUBLE)) {
+			this.attrs.set(rank, Double.valueOf(value.toString()));
+		}
+		else if (type.equals(Type.TYPE_STRING)) {
+			this.attrs.set(rank, value.toString());
+		}    		
+	}
+	
 	@Override
 	public int compareTo(PrimaryKey that) {
 
@@ -79,7 +105,7 @@ public class PrimaryKey implements Comparable<PrimaryKey> {
 			Integer thisType = this.types.get(i);
 			Integer thatType = that.types.get(i);
 			
-			if (thisType != thatType) {
+			if (thisType.compareTo(thatType) != 0) {
 				throw new CustomerException("PrimaryKey", "compareTo(): thisType != thatType");
 			}
 			
@@ -87,35 +113,35 @@ public class PrimaryKey implements Comparable<PrimaryKey> {
 			Object thatAttr = that.attrs.get(i);
 			
 			int result = 0;
-			if (thisType == Type.TYPE_INT) {
+			if (thisType.equals(Type.TYPE_INT)) {
 				
 				result = ((Integer) thisAttr).compareTo((Integer) thatAttr);
 				if (result != 0) {
 					return result;
 				}
 			}
-			else if (thisType == Type.TYPE_LONG) {
+			else if (thisType.equals(Type.TYPE_LONG)) {
 				
 				result = ((Long) thisAttr).compareTo((Long) thatAttr);
 				if (result != 0) {
 					return result;
 				}
 			}
-			else if (thisType == Type.TYPE_FLOAT) {
+			else if (thisType.equals(Type.TYPE_FLOAT)) {
 				
 				result = ((Float) thisAttr).compareTo((Float) thatAttr);
 				if (result != 0) {
 					return result;
 				}
 			}
-			else if (thisType == Type.TYPE_DOUBLE) {
+			else if (thisType.equals(Type.TYPE_DOUBLE)) {
 				
 				result = ((Double) thisAttr).compareTo((Double) thatAttr);
 				if (result != 0) {
 					return result;
 				}
 			}
-			else if (thisType == Type.TYPE_STRING) {
+			else if (thisType.equals(Type.TYPE_STRING)) {
 				
 				result = ((String) thisAttr).compareTo((String) thatAttr);
 				if (result != 0) {
@@ -145,5 +171,34 @@ public class PrimaryKey implements Comparable<PrimaryKey> {
 	public String toString() {
 		
 		return this.attrs.toString();
+	}
+	
+	@Override
+	public Object clone() {
+		
+		PrimaryKey pk = new PrimaryKey();	
+		
+		for (Integer i : this.types) {
+			pk.types.add(new Integer(Integer.valueOf(i)));
+		}
+		for (Object o : this.attrs) {
+			if (o instanceof Integer) {
+				pk.attrs.add(new Integer(Integer.valueOf(0)));
+			}
+			else if (o instanceof Long) {
+				pk.attrs.add(new Long(Long.valueOf(0)));
+			}
+			else if (o instanceof Float) {
+				pk.attrs.add(new Float(Float.valueOf(0)));
+			}
+			else if (o instanceof Double) {
+				pk.attrs.add(new Double(Double.valueOf(0)));
+			}
+			else if (o instanceof String) {
+				pk.attrs.add(new String(o.toString()));
+			}
+		}
+		
+		return pk;
 	}
 }
