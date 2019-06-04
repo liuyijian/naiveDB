@@ -39,6 +39,7 @@ import metadata.MetaData;
 import metadata.TableInfo;
 
 import storage.*;
+import util.CustomerException;
 
 
 public class SQLParser {
@@ -117,12 +118,15 @@ public class SQLParser {
             }
         }
         catch (IOException e){
-            return "error";
+            return "IOException";
         }
+        catch (CustomerException e) {
+        	return e.code + " | " + e.msg;
+        }        
         catch (Exception e){
-            System.out.println("this sql fuck:"+sql);
+            System.out.println("this sql fuck: "+sql);
             e.printStackTrace();
-            return "error";
+            return "Unknown Exception";
         }
     }
 
