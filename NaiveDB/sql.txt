@@ -1,7 +1,6 @@
 auth admin 123456;
 use database database1;
-drop table avengers
-drop table villain
+drop table avengers;
 create table avengers
     (id         int not null, 
      name           string(32) not null, 
@@ -10,12 +9,16 @@ create table avengers
      height     double,
      primary key (ID)
     );
+INSERT INTO avengers VALUES (10, 'Captain', 50, 78.1, 1.85);
+INSERT INTO avengers VALUES (3, 'Thor', 90, 92.1, 1.89);
+INSERT INTO avengers VALUES (7, 'IronMan', 85, 82.1, 1.76);
+INSERT INTO avengers VALUES (4, 'rocket', 40, 42.1, 0.76);
+INSERT INTO avengers VALUES (5, 'Groot', 10, 182.1, 2.76);
 
-create table villain
-    (id         int not null, 
-     name           string(32) not null, 
-     power  int not null,
-     primary key (ID)
-    );
+DELETE FROM avengers WHERE name = 'Groot';
 
-select avengers.name, villain.name, villain.power from avengers join villain on avengers.power = villain.power where villain.power > 40;
+UPDATE avengers SET power = 100 WHERE name = 'Captain';
+    
+select id, name from avengers where id = 4;
+
+select id, name from avengers;

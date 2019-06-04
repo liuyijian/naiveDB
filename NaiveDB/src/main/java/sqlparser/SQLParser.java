@@ -20,6 +20,7 @@ import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.drop.Drop;
 import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.insert.Insert;
@@ -32,6 +33,8 @@ import java.util.*;
 
 import org.json.JSONObject;
 
+import github.clyoudu.consoletable.ConsoleTable;
+import github.clyoudu.consoletable.table.Cell;
 import metadata.MetaData;
 import metadata.TableInfo;
 
@@ -195,7 +198,7 @@ public class SQLParser {
         // 默认用PlainSelect，不支持UNION，order by
         PlainSelect plainStmt = (PlainSelect) stmt.getSelectBody();
         //拿到列名
-        System.out.println(plainStmt.getSelectItems());
+        List<SelectItem> cols = plainStmt.getSelectItems();
         // 拿到表名
         String tableName = ((Table)plainStmt.getFromItem()).getName().toUpperCase();
         // 拿到where
@@ -209,11 +212,11 @@ public class SQLParser {
             String secondTableName = ((Table)joinStmt.getRightItem()).getName().toUpperCase();
             Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple2 = whereParser((BinaryExpression) joinStmt.getOnExpression());
             TreeSet<JointRow> answer = metaData.metaJson.query.select(tableName,secondTableName,tuple2.first,tuple2.second,tuple.first,tuple.second);
-            return answer.toString();
+            return this.printAndReturnSelectedRows(answer, cols);
         } else{
             //单表
             HashMap<PrimaryKey, Entry<PrimaryKey, Row>> answer = metaData.metaJson.query.select(tableName, tuple.first, tuple.second);
-            return answer.toString();
+            return this.printAndReturnSelectedRows(answer, cols);
         }
 
 
@@ -230,6 +233,43 @@ public class SQLParser {
 //        System.out.println(plainStmt.getHaving());
 //
 //        return "success";
+    }
+    
+    String printAndReturnSelectedRows(TreeSet<JointRow> selected, List<SelectItem> cols) throws IOException {
+    	List<Cell> header = new ArrayList<Cell>();
+    	for (SelectItem col : cols) {
+    		header.add(new Cell(col.toString()));
+    	}
+    	List<List<Cell>> body = new ArrayList<List<Cell>>();
+    	for (JointRow row : selected) {
+    		List<Cell> selectedRow = new ArrayList<Cell>();
+    		for (SelectItem col : cols) {
+    			selectedRow.add(new Cell(row.get(col)));
+    		}
+    		body.add(selectedRow);
+    	}
+    	ConsoleTable consoleTable = new ConsoleTable.ConsoleTableBuilder().addHeaders(header).addRows(body).build();
+    	System.out.println(consoleTable.toString());
+    	return consoleTable.toString();
+    }
+    
+    String printAndReturnSelectedRows(HashMap<PrimaryKey, Entry<PrimaryKey, Row>> selected, List<SelectItem> cols) throws IOException {
+    	List<Cell> header = new ArrayList<Cell>();
+    	for (SelectItem col : cols) {
+    		header.add(new Cell(col.toString()));
+    	}
+    	List<List<Cell>> body = new ArrayList<List<Cell>>();
+    	for (Entry<PrimaryKey, Row> row : selected.values()) {
+    		List<Cell> selectedRow = new ArrayList<Cell>();
+    		for (SelectItem col : cols) {
+    			Object value = row.value.get(col.toString().toUpperCase());
+    			selectedRow.add(new Cell(value == null ? null : value.toString()));
+    		}
+    		body.add(selectedRow);
+    	}
+    	ConsoleTable consoleTable = new ConsoleTable.ConsoleTableBuilder().addHeaders(header).addRows(body).build();
+    	System.out.println(consoleTable.toString());
+    	return consoleTable.toString();
     }
 
     public String insertParser(Insert stmt) throws IOException{

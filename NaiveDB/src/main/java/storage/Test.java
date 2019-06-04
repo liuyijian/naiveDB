@@ -78,7 +78,7 @@ public class Test {
 			notNull.add(true);
 		}
 		
-		Storage test = new Storage(Storage.CONSTRUCT_FROM_NEW_DB, 
+		Storage test = new Storage(Storage.CONSTRUCT_FROM_NEW_DB, "",
                                    "/Users/steve/github-repos/naiveDB/test.db", 
                                    types, attrs, pkTypes, pkAttrs, offsetsInRow, notNull);
 		
@@ -176,7 +176,7 @@ public class Test {
 			notNull.add(true);
 		}
 		
-		Storage test = new Storage(Storage.CONSTRUCT_FROM_EXISTED_DB, 
+		Storage test = new Storage(Storage.CONSTRUCT_FROM_EXISTED_DB, "",
                                    "/Users/steve/github-repos/naiveDB/test.db", 
                                    types, attrs, pkTypes, pkAttrs, offsetsInRow, notNull);
 
@@ -228,7 +228,7 @@ public class Test {
 			notNull.add(true);
 		}
 		
-		Storage test = new Storage(Storage.CONSTRUCT_FROM_NEW_DB, 
+		Storage test = new Storage(Storage.CONSTRUCT_FROM_NEW_DB, "",
                                    "/Users/steve/github-repos/naiveDB/test.db", 
                                    types, attrs, pkTypes, pkAttrs, offsetsInRow, notNull);
 		
@@ -345,7 +345,7 @@ public class Test {
 			notNull.add(true);
 		}
 		
-		Storage test = new Storage(Storage.CONSTRUCT_FROM_EXISTED_DB, 
+		Storage test = new Storage(Storage.CONSTRUCT_FROM_EXISTED_DB, "",
                                    "/Users/steve/github-repos/naiveDB/test.db", 
                                    types, attrs, pkTypes, pkAttrs, offsetsInRow, notNull);
 

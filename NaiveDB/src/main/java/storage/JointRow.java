@@ -1,8 +1,11 @@
 package storage;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
+import github.clyoudu.consoletable.table.Cell;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.relational.EqualsTo;
@@ -11,6 +14,7 @@ import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.MinorThan;
 import net.sf.jsqlparser.expression.operators.relational.MinorThanEquals;
 import net.sf.jsqlparser.expression.operators.relational.NotEqualsTo;
+import net.sf.jsqlparser.statement.select.SelectItem;
 import util.CustomerException;
 
 
@@ -165,6 +169,25 @@ public class JointRow implements Comparable<JointRow> {
 		return this.rowA.toString() + " | " + this.rowB.toString();
 	}
 	
+	
+	public String get(SelectItem col) throws IOException {
+		
+		String[] info = col.toString().toUpperCase().split("\\.");
+		String tableName = info[0];
+		String colName = info[1];
+		
+		if (this.rowA.value.storage.getTableName().equals(tableName)) {
+			Object ret = this.rowA.value.get(colName);
+			return ret == null ? null : ret.toString();
+		}
+		else if (this.rowB.value.storage.getTableName().equals(tableName)) {
+			Object ret = this.rowB.value.get(colName);
+			return ret == null ? null : ret.toString();			
+		}
+		else {
+			return null;
+		}
+	}
 //	protected Vector<Row> rows;
 //	
 //	public JointRow() {

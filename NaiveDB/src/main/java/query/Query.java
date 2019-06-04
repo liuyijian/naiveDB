@@ -51,7 +51,7 @@ public class Query {
 			for (Entry<PrimaryKey, Row> entryA : tableA.getIndex()) {
 				for (Entry<PrimaryKey, Row> entryB : tableB.getIndex()) {
 					selected.add(new JointRow(entryA, entryB));	
-				}			
+				}
 			}
 		}
 		else {

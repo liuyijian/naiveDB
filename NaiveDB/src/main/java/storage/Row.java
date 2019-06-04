@@ -186,9 +186,9 @@ public class Row implements Comparable<Row> {
 		if (leftType.equals(rightType)) {
 			this.data.set(leftRank, this.data.get(rightRank));
 		}
-		else if (leftType.equals(Type.TYPE_STRING) || rightType.equals(Type.TYPE_STRING)) {
-			throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
-		}
+//		else if (leftType.equals(Type.TYPE_STRING) || rightType.equals(Type.TYPE_STRING)) {
+//			throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
+//		}
 		else {
 			Object rightValue = this.data.get(rightRank);
 			if (leftType.equals(Type.TYPE_INT)) {
@@ -206,6 +206,13 @@ public class Row implements Comparable<Row> {
 			else if (leftType.equals(Type.TYPE_DOUBLE)) {
 				this.data.set(leftRank, rightValue == null ? 
 					null : Double.valueOf(rightValue.toString()));
+			}
+			else if (leftType.equals(Type.TYPE_STRING)) {
+				this.data.set(leftRank, rightValue == null ? 
+					null : rightValue.toString());
+			}
+			else {
+				throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
 			}
 		}
 	}
@@ -230,12 +237,12 @@ public class Row implements Comparable<Row> {
 			rightType = Type.TYPE_DOUBLE;
 		}
 		
-		if (rightValue == null || leftType.equals(rightType)) {
+		if (leftType.equals(rightType)) {
 			this.data.set(leftRank, rightValue);
 		}
-		else if (leftType.equals(Type.TYPE_STRING) || rightType.equals(Type.TYPE_STRING)) {
-			throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
-		}
+//		else if (leftType.equals(Type.TYPE_STRING) || rightType.equals(Type.TYPE_STRING)) {
+//			throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
+//		}
 		else {
 			if (leftType.equals(Type.TYPE_INT)) {
 				this.data.set(leftRank, rightValue == null ? 
@@ -252,6 +259,13 @@ public class Row implements Comparable<Row> {
 			else if (leftType.equals(Type.TYPE_DOUBLE)) {
 				this.data.set(leftRank, rightValue == null ? 
 					null : Double.valueOf(rightValue.toString()));
+			}
+			else if (leftType.equals(Type.TYPE_STRING)) {
+				this.data.set(leftRank, rightValue == null ? 
+					null : rightValue.toString());
+			}
+			else {
+				throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
 			}
 		}
 	}
