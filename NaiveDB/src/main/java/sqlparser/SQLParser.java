@@ -151,6 +151,7 @@ public class SQLParser {
         try{
             Storage storage = new Storage(
                     Storage.CONSTRUCT_FROM_NEW_DB,
+                    tableName,
                     tableInfo.filepath,
                     tableInfo.types,
                     tableInfo.attrs,

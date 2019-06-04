@@ -25,6 +25,7 @@ public class Storage {
     public static final int SINGLE_PRIMARY_KEY_IN_RIGHT_EXPRESSION = 4;
     public static final int SINGLE_PRIMARY_KEY_NOT_EXISTED = 5;
 	
+    protected String           tableName;
 	protected String           fileName;
 	protected RandomAccessFile file;
 	
@@ -46,8 +47,8 @@ public class Storage {
 	
 	protected Cache cache;
 	
-    public Storage(Integer mode, String fileName, Vector<Integer> types, 
-    		       Vector<String> attrs, Vector<Integer> pkTypes, 
+    public Storage(Integer mode, String tableName, String fileName, 
+    		       Vector<Integer> types, Vector<String> attrs, Vector<Integer> pkTypes, 
     		       Vector<String> pkAttrs, Vector<Integer> offsetsInRow, 
     		       Vector<Boolean> notNull) throws IOException {
 		
@@ -83,6 +84,7 @@ public class Storage {
 		}
 		this.notNull = notNull;
 		
+		this.tableName = tableName.toUpperCase();
 		this.fileName = fileName;
 		this.file = new RandomAccessFile(fileName, "rw");
 		this.data = new Vector<Row>();
@@ -878,6 +880,6 @@ public class Storage {
 	
 	public String getTableName() {
 		
-		return "";
+		return this.tableName;
 	}
 }

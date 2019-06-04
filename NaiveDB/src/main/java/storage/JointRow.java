@@ -30,8 +30,8 @@ public class JointRow implements Comparable<JointRow> {
 		String[] left = binaryExpression.getLeftExpression().toString().split("\\.");
 		String[] right = binaryExpression.getRightExpression().toString().split("\\.");
 		
-		String leftTableName = left.length == 2 ? left[0] : null;		
-		String rightTableName = right.length == 2 ? right[0] : null;
+		String leftTableName = left.length == 2 ? left[0].toUpperCase() : null;		
+		String rightTableName = right.length == 2 ? right[0].toUpperCase() : null;
 		String leftAttr = left.length == 2 ? left[1] : left[0];		
 		String rightAttr = right.length == 2 ? right[1] : right[0];
 
