@@ -1,3 +1,5 @@
+auth admin 123456;
+use database database1;
 create table avengers
 	(id			int not null, 
 	 name			string(32) not null, 
