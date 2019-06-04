@@ -144,15 +144,15 @@ public class Storage {
     			return i;
     		}
     	}
-    	throw new CustomerException("Storage", "getAttributeRank()" + colName + "is not a col name!");
+    	throw new CustomerException("Storage", "getAttributeRank():" + colName + " is not a col name!");
     }
      
     protected void checkNull(Vector<Object> data) {
     	
     	for (int i = 0; i < this.numberOfCol; ++i) {
     		
-    		if (data.get(i) == null && this.notNull.get(i)) {
-    			throw new CustomerException("Storage", "checkNull(): " + this.attrs.get(i) + "can not be null!");
+    		if (data.get(i).toString().equals(new String("NULL")) && this.notNull.get(i)) {
+    			throw new CustomerException("Storage", "checkNull(): " + this.attrs.get(i) + " can not be null!");
     		}
     	}
     }
@@ -161,7 +161,10 @@ public class Storage {
     	
 		for (int i = 0; i < this.numberOfCol; ++i) {
     		try {
-        		if (this.types.get(i).equals(Type.TYPE_INT)) {
+    			if (data.get(i).toString().equals(new String("NULL"))) {
+    				data.set(i, null);
+    			}
+    			else if (this.types.get(i).equals(Type.TYPE_INT)) {
         			data.set(i, Integer.valueOf(data.get(i).toString()));
         		}
         		else if (this.types.get(i).equals(Type.TYPE_LONG)) {
@@ -178,7 +181,7 @@ public class Storage {
         		}    			
     		}
     		catch (Exception e) {
-        		throw new CustomerException("Storage", "convertType(): " + data.get(i) + "has a wrong type!");    			
+        		throw new CustomerException("Storage", "convertType(): " + data.get(i) + " has a wrong type!");    			
     		}
     	}
     }
@@ -238,16 +241,22 @@ public class Storage {
     
 	protected static int attributeCompare(Object left, Object right) {
 				
-		if (left instanceof String && right instanceof String) {
+		if (left == null || right == null) {
+			if (left == null && right == null) {
+				return 0;
+			}
+			else {
+				return 1;
+			}
+		}
+		else if (left instanceof String && right instanceof String) {
 			return ((String) left).compareTo((String) right);
 		} 
-		else if (left instanceof String || right instanceof String) {
-			throw new CustomerException("Storage", left.toString() + " and " + right.toString() + " can not be compared.");
+		else {
+			Double leftValue = Double.valueOf(left.toString());
+			Double rightValue = Double.valueOf(right.toString());
+			return leftValue.compareTo(rightValue);			
 		}
-
-		Double leftValue = Double.valueOf(left.toString());
-		Double rightValue = Double.valueOf(right.toString());
-		return leftValue.compareTo(rightValue);			
 	}
 	
 	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> filtrateEqual(
