@@ -123,16 +123,40 @@ public class Query {
     protected static boolean canBeNaturalJoined(Entry<PrimaryKey, Row> entryA, 
     										    Vector<Integer> tableAAttrIndexes,
     										    Entry<PrimaryKey, Row> entryB, 
-    										    Vector<Integer> tableBAttrIndexes) {
+    										    Vector<Integer> tableBAttrIndexes) 
+    										    throws IOException {
     	
     	if (tableAAttrIndexes.size() != tableBAttrIndexes.size()) {
     		return false;
     	}
+    	
     	for (int i = 0; i < tableAAttrIndexes.size(); ++i) {
-    		if (! tableAAttrIndexes.get(i).equals(tableBAttrIndexes.get(i))) {
-    			return false;
+    		Object left = entryA.value.get(tableAAttrIndexes.get(i));
+    		Object right = entryB.value.get(tableBAttrIndexes.get(i));
+    		if (left == null || right == null) {
+    			if (left == null && right == null) {
+    				continue;
+    			}
+    			else {
+    				return false;
+    			}
     		}
+    		else if (left instanceof String && right instanceof String) {
+    			String leftValue = (String) left;
+    			String rightValue = (String) right;
+    			if (! leftValue.equals(rightValue)) {
+    				return false;
+    			}
+    		} 
+    		else {
+    			Double leftValue = Double.valueOf(left.toString());
+    			Double rightValue = Double.valueOf(right.toString());
+    			if (! leftValue.equals(rightValue)) {
+    				return false;
+    			}
+    		}    		
     	}
+    	
     	return true;
     }
 	
