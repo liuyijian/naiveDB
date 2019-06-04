@@ -272,7 +272,7 @@ public class SQLParser {
     		body.add(selectedRow);
     	}
     	ConsoleTable consoleTable = new ConsoleTable.ConsoleTableBuilder().addHeaders(header).addRows(body).build();
-    	System.out.println(consoleTable.toString());
+//    	System.out.println(consoleTable.toString());
     	return consoleTable.toString();
     }
     
@@ -292,7 +292,7 @@ public class SQLParser {
     		body.add(selectedRow);
     	}
     	ConsoleTable consoleTable = new ConsoleTable.ConsoleTableBuilder().addHeaders(header).addRows(body).build();
-    	System.out.println(consoleTable.toString());
+//    	System.out.println(consoleTable.toString());
     	return consoleTable.toString();
     }
     
@@ -310,7 +310,7 @@ public class SQLParser {
     		body.add(selectedRow);
     	}
     	ConsoleTable consoleTable = new ConsoleTable.ConsoleTableBuilder().addHeaders(header).addRows(body).build();
-    	System.out.println(consoleTable.toString());
+//    	System.out.println(consoleTable.toString());
     	return consoleTable.toString();
     }
     
@@ -329,7 +329,7 @@ public class SQLParser {
     		body.add(selectedRow);
     	}
     	ConsoleTable consoleTable = new ConsoleTable.ConsoleTableBuilder().addHeaders(header).addRows(body).build();
-    	System.out.println(consoleTable.toString());
+//    	System.out.println(consoleTable.toString());
     	return consoleTable.toString();
     }
 

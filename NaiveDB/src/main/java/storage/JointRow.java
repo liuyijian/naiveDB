@@ -49,12 +49,6 @@ public class JointRow implements Comparable<JointRow> {
 			else if (leftTableName.equals(this.rowB.value.storage.getTableName())) {
 				leftTable = this.rowB;
 			}
-			else {
-				throw new CustomerException("JointRow", "left table is not found.");
-			}			
-		}
-		else {
-			throw new CustomerException("JointRow", "left table is not found.");
 		}
 	 	
 		if (rightTableName != null) {
@@ -64,25 +58,19 @@ public class JointRow implements Comparable<JointRow> {
 			else if (rightTableName.equals(this.rowB.value.storage.getTableName())) {
 				rightTable = this.rowB;
 			}
-			else {
-				throw new CustomerException("JointRow", "right table is not found.");
-			}			
-		}
-		else {
-			throw new CustomerException("JointRow", "right table is not found.");
 		}
 
 		Object leftValue = null;
 		Object rightValue = null;
 		
-		if (leftTable.value.storage.isAttribute(leftAttr.toUpperCase())) {
+		if (leftTable != null && leftTable.value.storage.isAttribute(leftAttr.toUpperCase())) {
 			leftValue = leftTable.value.get(leftAttr.toUpperCase());
 		}
 		else {
 			leftValue = leftAttr;
 		}
 
-		if (rightTable.value.storage.isAttribute(rightAttr.toUpperCase())) {
+		if (rightTable != null && rightTable.value.storage.isAttribute(rightAttr.toUpperCase())) {
 			rightValue = rightTable.value.get(rightAttr.toUpperCase());
 		}
 		else  {
