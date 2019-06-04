@@ -22,3 +22,5 @@ UPDATE avengers SET power = 100 WHERE name = 'Captain';
 select id, name from avengers where id = 4;
 
 select id, name from avengers;
+
+select * from avengers;

@@ -206,33 +206,87 @@ public class SQLParser {
 
         // 只涉及两张表的join
         List<Join> joinStmts = plainStmt.getJoins();
-        if (joinStmts != null){
-            // 双表
-            Join joinStmt = joinStmts.get(0);
-            String secondTableName = ((Table)joinStmt.getRightItem()).getName().toUpperCase();
-            Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple2 = whereParser((BinaryExpression) joinStmt.getOnExpression());
-            TreeSet<JointRow> answer = metaData.metaJson.query.select(tableName,secondTableName,tuple2.first,tuple2.second,tuple.first,tuple.second);
-            return this.printAndReturnSelectedRows(answer, cols);
-        } else{
-            //单表
-            HashMap<PrimaryKey, Entry<PrimaryKey, Row>> answer = metaData.metaJson.query.select(tableName, tuple.first, tuple.second);
-            return this.printAndReturnSelectedRows(answer, cols);
+        if (cols.toString().equals(new String("[*]"))) {
+        	if (joinStmts != null){
+                // 双表
+                Join joinStmt = joinStmts.get(0);
+                String secondTableName = ((Table)joinStmt.getRightItem()).getName().toUpperCase();
+                Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple2 = whereParser((BinaryExpression) joinStmt.getOnExpression());
+                TreeSet<JointRow> answer = metaData.metaJson.query.select(tableName,secondTableName,tuple2.first,tuple2.second,tuple.first,tuple.second);
+                Storage firstTable = metaData.metaJson.query.tableStorageMap.get(tableName);
+                Storage secondTable = metaData.metaJson.query.tableStorageMap.get(secondTableName);
+            	List<String> header = new ArrayList<String>();
+            	for (String attr : firstTable.getAttributes()) {
+            		header.add(tableName + "." + attr);
+            	}
+            	for (String attr : secondTable.getAttributes()) {
+            		header.add(secondTableName + "." + attr);
+            	}
+                return this.printAndReturnSelectedRowsStar(answer, header);
+            } else{
+                //单表
+            	Storage table = metaData.metaJson.query.tableStorageMap.get(tableName);
+            	List<String> header = new ArrayList<String>();
+            	for (String attr : table.getAttributes()) {
+            		header.add(attr);
+            	}
+                HashMap<PrimaryKey, Entry<PrimaryKey, Row>> answer = metaData.metaJson.query.select(tableName, tuple.first, tuple.second);
+                return this.printAndReturnSelectedRowsStar(answer, header);
+            }
         }
-
-
-//        BinaryExpression binaryExpression = (BinaryExpression) plainStmt.getWhere();
-//        if (binaryExpression != null){
-//            System.out.println(binaryExpression.getLeftExpression());
-//            System.out.println(binaryExpression.getRightExpression());
-//        }
-
-        // 判断此Expression 是不是 GreaterThan，Greater .. 的扩展来判断中间的比较符号
-
-
-//        System.out.println(plainStmt.getGroupBy());
-//        System.out.println(plainStmt.getHaving());
-//
-//        return "success";
+        else {
+        	if (joinStmts != null){
+                // 双表
+                Join joinStmt = joinStmts.get(0);
+                String secondTableName = ((Table)joinStmt.getRightItem()).getName().toUpperCase();
+                Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple2 = whereParser((BinaryExpression) joinStmt.getOnExpression());
+                TreeSet<JointRow> answer = metaData.metaJson.query.select(tableName,secondTableName,tuple2.first,tuple2.second,tuple.first,tuple.second);
+                return this.printAndReturnSelectedRows(answer, cols);
+            } else{
+                //单表
+                HashMap<PrimaryKey, Entry<PrimaryKey, Row>> answer = metaData.metaJson.query.select(tableName, tuple.first, tuple.second);
+                return this.printAndReturnSelectedRows(answer, cols);
+            }
+        }
+    }
+    
+    String printAndReturnSelectedRowsStar(TreeSet<JointRow> selected, List<String> cols) throws IOException {
+    	
+    	List<Cell> header = new ArrayList<Cell>();
+    	for (String col : cols) {
+    		header.add(new Cell(col.toUpperCase()));
+    	}
+    	List<List<Cell>> body = new ArrayList<List<Cell>>();
+    	for (JointRow row : selected) {
+    		List<Cell> selectedRow = new ArrayList<Cell>();
+    		for (String col : cols) {
+    			selectedRow.add(new Cell(row.get(col)));
+    		}
+    		body.add(selectedRow);
+    	}
+    	ConsoleTable consoleTable = new ConsoleTable.ConsoleTableBuilder().addHeaders(header).addRows(body).build();
+    	System.out.println(consoleTable.toString());
+    	return consoleTable.toString();
+    }
+    
+    String printAndReturnSelectedRowsStar(HashMap<PrimaryKey, Entry<PrimaryKey, Row>> selected, List<String> cols) throws IOException {
+    	
+    	List<Cell> header = new ArrayList<Cell>();
+    	for (String col : cols) {
+    		header.add(new Cell(col.toUpperCase()));
+    	}
+    	List<List<Cell>> body = new ArrayList<List<Cell>>();
+    	for (Entry<PrimaryKey, Row> row : selected.values()) {
+    		List<Cell> selectedRow = new ArrayList<Cell>();
+    		for (String col : cols) {
+    			Object value = row.value.get(col.toUpperCase());
+    			selectedRow.add(new Cell(value == null ? null : value.toString()));
+    		}
+    		body.add(selectedRow);
+    	}
+    	ConsoleTable consoleTable = new ConsoleTable.ConsoleTableBuilder().addHeaders(header).addRows(body).build();
+    	System.out.println(consoleTable.toString());
+    	return consoleTable.toString();
     }
     
     String printAndReturnSelectedRows(TreeSet<JointRow> selected, List<SelectItem> cols) throws IOException {
@@ -302,7 +356,7 @@ public class SQLParser {
                 insertRowCount =  metaData.metaJson.query.insert(tableName,orderedRow);
             }
 
-            return "insert row" + insertRowCount;
+            return insertRowCount + " row was inserted!";
         }
         return "cannot insert into a non-exist table";
     }
@@ -313,7 +367,7 @@ public class SQLParser {
         if(metaData.metaJson.hasTable(tableName)){
             Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple = whereParser((BinaryExpression) stmt.getWhere());
             Integer deleteCount = metaData.metaJson.query.delete(tableName, tuple.first, tuple.second);
-            return "deleteRow : " + deleteCount;
+            return deleteCount + " rows were deleted!";
         }
         return "cannot delete from a non-exist table";
     }
@@ -330,7 +384,7 @@ public class SQLParser {
                     tuple.first,
                     tuple.second
             );
-            return "updateRow : " + updateCount;
+            return updateCount + " rows were updated!";
         }
         return "cannot update a non-exist table";
     }

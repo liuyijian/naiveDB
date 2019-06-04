@@ -188,6 +188,25 @@ public class JointRow implements Comparable<JointRow> {
 			return null;
 		}
 	}
+	
+	public String get(String col) throws IOException {
+		
+		String[] info = col.toUpperCase().split("\\.");
+		String tableName = info[0];
+		String colName = info[1];
+		
+		if (this.rowA.value.storage.getTableName().equals(tableName)) {
+			Object ret = this.rowA.value.get(colName);
+			return ret == null ? null : ret.toString();
+		}
+		else if (this.rowB.value.storage.getTableName().equals(tableName)) {
+			Object ret = this.rowB.value.get(colName);
+			return ret == null ? null : ret.toString();			
+		}
+		else {
+			return null;
+		}
+	}
 //	protected Vector<Row> rows;
 //	
 //	public JointRow() {
