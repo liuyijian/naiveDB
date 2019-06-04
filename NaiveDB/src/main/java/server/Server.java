@@ -67,7 +67,7 @@ public class Server {
 
                     //读取客户端数据
                     String inputStr = input.readUTF();
-                    System.out.println("客户端发来数据是：\n" + inputStr);
+//                    System.out.println("客户端发来数据是：\n" + inputStr);
                     //向客户端发送数据，为调用SQLParser类的犯法处理输入后返回的结果
                     String outputStr = sqlParser.dealer(inputStr).toString();
                     out.writeUTF(outputStr);

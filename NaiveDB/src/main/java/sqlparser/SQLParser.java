@@ -75,10 +75,15 @@ public class SQLParser {
 
     public String abstractParser(String sql){
         try {
+            if (sql.equals("") || sql == null){
+                return "";
+            }
             // 分类处理sql语句，手动补齐一些没有的语句
             String[] arr = sql.split("\\s+");
-
-            if(checkCreateDatabase(arr)){
+            if(arr.length == 0){
+                return "";
+            }
+            else if(checkCreateDatabase(arr)){
                 return metaData.createDatabase(arr[2]);
             } else if(checkShowDatabase(arr)){
                 return metaData.showDatabaseTables(arr[2]);
@@ -106,6 +111,7 @@ public class SQLParser {
                 } else if (sqlStatement instanceof Update){
                     return updateParser((Update) sqlStatement);
                 } else {
+                    System.out.println("fuck" + sql);
                     throw new JSQLParserException("不支持此语句");
                 }
             }
@@ -114,6 +120,7 @@ public class SQLParser {
             return "error";
         }
         catch (Exception e){
+            System.out.println("this sql fuck:"+sql);
             e.printStackTrace();
             return "error";
         }
