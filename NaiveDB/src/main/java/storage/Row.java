@@ -453,6 +453,13 @@ public class Row implements Comparable<Row> {
 	@Override
 	public String toString() {
 		
+		if (! this.isInMemory) {
+			try {
+				this.readFromFile();
+			} catch (IOException e) {
+			}
+		}
+		
 		return "<" + this.isAvailable + ", " + (this.data == null ? "null" : 
 			   this.data.toString()) + ", " + (this.isNull == null ? "null" : 
 			   this.isNull.toString()) + ">";

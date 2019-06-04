@@ -875,4 +875,9 @@ public class Storage {
 		
 		return this.index;
 	}
+	
+	public String getTableName() {
+		
+		return "";
+	}
 }

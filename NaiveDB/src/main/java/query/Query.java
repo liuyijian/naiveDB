@@ -8,6 +8,8 @@ import java.util.Vector;
 import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.relational.*;
+import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.Table;
 import storage.Entry;
 import storage.JointRow;
 import storage.PrimaryKey;
