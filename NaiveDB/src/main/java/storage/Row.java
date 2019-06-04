@@ -237,6 +237,13 @@ public class Row implements Comparable<Row> {
 			rightType = Type.TYPE_DOUBLE;
 		}
 		
+		if (rightValue.toString().equals(new String("NULL"))) {
+			if (this.isNull.get(leftRank).equals(new Boolean(true))) {
+				throw new CustomerException("Storage", "tryToConvertAndAssignByRank():" 
+					  + this.storage.attrs.get(leftRank) + " can not be null!");
+			}
+		}
+		
 		if (leftType.equals(rightType)) {
 			this.data.set(leftRank, rightValue);
 		}
@@ -245,23 +252,23 @@ public class Row implements Comparable<Row> {
 //		}
 		else {
 			if (leftType.equals(Type.TYPE_INT)) {
-				this.data.set(leftRank, rightValue == null ? 
+				this.data.set(leftRank, rightValue.toString().equals(new String("NULL")) ? 
 					null : Integer.valueOf(rightValue.toString()));
 			}
 			else if (leftType.equals(Type.TYPE_LONG)) {
-				this.data.set(leftRank, rightValue == null ? 
+				this.data.set(leftRank, rightValue.toString().equals(new String("NULL")) ? 
 					null : Long.valueOf(rightValue.toString()));				
 			}
 			else if (leftType.equals(Type.TYPE_FLOAT)) {
-				this.data.set(leftRank, rightValue == null ? 
+				this.data.set(leftRank, rightValue.toString().equals(new String("NULL")) ? 
 					null : Float.valueOf(rightValue.toString()));
 			}
 			else if (leftType.equals(Type.TYPE_DOUBLE)) {
-				this.data.set(leftRank, rightValue == null ? 
+				this.data.set(leftRank, rightValue.toString().equals(new String("NULL")) ? 
 					null : Double.valueOf(rightValue.toString()));
 			}
 			else if (leftType.equals(Type.TYPE_STRING)) {
-				this.data.set(leftRank, rightValue == null ? 
+				this.data.set(leftRank, rightValue.toString().equals(new String("NULL")) ? 
 					null : rightValue.toString());
 			}
 			else {

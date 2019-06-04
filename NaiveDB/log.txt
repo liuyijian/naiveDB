@@ -1,0 +1,136 @@
+select * from avengers where name > 'a'
++----+----------+-------+--------+--------+
+| ID | NAME     | POWER | WEIGHT | HEIGHT |
++----+----------+-------+--------+--------+
+| 4  | 'rocket' | 40    | 42.1   | 0.76   |
++----+----------+-------+--------+--------+
+
+select * from avengers where weight > 0
+Storage | 92.1 and 0 can not be compared.
+
+select * from avengers where weight > 0
+Storage | 92.1 and 0 can not be compared.
+
+select * from avengers where weight > 0
++----+-----------+-------+--------+--------+
+| ID | NAME      | POWER | WEIGHT | HEIGHT |
++----+-----------+-------+--------+--------+
+| 7  | 'IronMan' | 85    | 82.1   | 1.76   |
+| 10 | 'Captain' | 100   | 78.1   | 1.85   |
+| 6  | 'Groot1'  | 10    | 182.1  | 2.76   |
+| 3  | 'Thor'    | 90    | 92.1   | 1.89   |
+| 4  | 'rocket'  | 40    | 42.1   | 0.76   |
++----+-----------+-------+--------+--------+
+
+select * from avengers where weight > 0
++----+-----------+-------+--------+--------+
+| ID | NAME      | POWER | WEIGHT | HEIGHT |
++----+-----------+-------+--------+--------+
+| 7  | 'IronMan' | 85    | 82.1   | 1.76   |
+| 10 | 'Captain' | 100   | 78.1   | 1.85   |
+| 6  | 'Groot1'  | 10    | 182.1  | 2.76   |
+| 3  | 'Thor'    | 90    | 92.1   | 1.89   |
+| 4  | 'rocket'  | 40    | 42.1   | 0.76   |
++----+-----------+-------+--------+--------+
+
+select * from avengers where height > 42.1
++----+------+-------+--------+--------+
+| ID | NAME | POWER | WEIGHT | HEIGHT |
+
+select * from avengers where height > 1.89
++----+----------+-------+--------+--------+
+| ID | NAME     | POWER | WEIGHT | HEIGHT |
++----+----------+-------+--------+--------+
+| 6  | 'Groot1' | 10    | 182.1  | 2.76   |
++----+----------+-------+--------+--------+
+
+select * from avengers where power > 1.89
++----+-----------+-------+--------+--------+
+| ID | NAME      | POWER | WEIGHT | HEIGHT |
++----+-----------+-------+--------+--------+
+| 7  | 'IronMan' | 85    | 82.1   | 1.76   |
+| 10 | 'Captain' | 100   | 78.1   | 1.85   |
+| 6  | 'Groot1'  | 10    | 182.1  | 2.76   |
+| 3  | 'Thor'    | 90    | 92.1   | 1.89   |
+| 4  | 'rocket'  | 40    | 42.1   | 0.76   |
++----+-----------+-------+--------+--------+
+
+select * from avengers where name = 'Thor'
++----+--------+-------+--------+--------+
+| ID | NAME   | POWER | WEIGHT | HEIGHT |
++----+--------+-------+--------+--------+
+| 3  | 'Thor' | 90    | 92.1   | 1.89   |
++----+--------+-------+--------+--------+
+
+select * from avengers where name <> 'Thor'
++----+-----------+-------+--------+--------+
+| ID | NAME      | POWER | WEIGHT | HEIGHT |
++----+-----------+-------+--------+--------+
+| 7  | 'IronMan' | 85    | 82.1   | 1.76   |
+| 10 | 'Captain' | 100   | 78.1   | 1.85   |
+| 6  | 'Groot1'  | 10    | 182.1  | 2.76   |
+| 4  | 'rocket'  | 40    | 42.1   | 0.76   |
++----+-----------+-------+--------+--------+
+
+select * from avengers where name != 'Thor'
++----+-----------+-------+--------+--------+
+| ID | NAME      | POWER | WEIGHT | HEIGHT |
++----+-----------+-------+--------+--------+
+| 7  | 'IronMan' | 85    | 82.1   | 1.76   |
+| 10 | 'Captain' | 100   | 78.1   | 1.85   |
+| 6  | 'Groot1'  | 10    | 182.1  | 2.76   |
+| 4  | 'rocket'  | 40    | 42.1   | 0.76   |
++----+-----------+-------+--------+--------+
+
+insert into avengers values (null, 'lyj', 1000, 1000, 1000)
+Storage | convertType(): NULLhas a wrong type!
+
+insert into avengers values (111, 'lyj', 1000, 1000, 1000)
+1 row was inserted!
+
+insert into avengers values (null, 'lyj', 1000, 1000, null)
+Storage | convertType(): NULL has a wrong type!
+
+insert into avengers values (121, 'lyj', 1000, null, null)
+Storage | convertType(): NULL has a wrong type!
+
+insert into avengers values (121, 'lyj', 1000, null, null)
+Storage | convertType(): NULL has a wrong type!
+
+insert into avengers values (121, 'lyj', 1000, null, null)
+Storage | convertType(): NULL has a wrong type!
+
+insert into avengers values (121, 'lyj', 1000, null, null)
+insert into avengers values (121, 'lyj', 1000, null, null)
+1 row was inserted!
+
+0 row was inserted!
+
+insert into avengers values (122, 'lyj', null, null, null)
+1 row was inserted!
+
+insert into avengers values (123, 'lyj', null, null, null)
+Storage | checkNull(): POWERcan not be null!
+
+insert into avengers values (123, 'lyj', null, null, null)
+Storage | checkNull(): POWER can not be null!
+
+select * from avengers
++-----+-----------+-------+--------+--------+
+| ID  | NAME      | POWER | WEIGHT | HEIGHT |
++-----+-----------+-------+--------+--------+
+| 7   | 'IronMan' | 85    | 82.1   | 1.76   |
+| 10  | 'Captain' | 100   | 78.1   | 1.85   |
+| 6   | 'Groot1'  | 10    | 182.1  | 2.76   |
+| 3   | 'Thor'    | 90    | 92.1   | 1.89   |
+| 122 | 'lyj'     |       |        |        |
+| 111 | 'lyj'     | 1000  | 1000.0 | 1000.0 |
+| 121 | 'lyj'     | 1000  |        |        |
+| 4   | 'rocket'  | 40    | 42.1   | 0.76   |
++-----+-----------+-------+--------+--------+
+
+update avengers set power = null where name = 'lyj'
+Unknown Exception
+
+update avengers set power = null where name = 'lyj'
+3 rows were updated!
