@@ -330,7 +330,8 @@ public class Query {
 				}
 			}
 			else {
-				Object rightValue = value.toString();
+				Object rightValue = value.toString().equals(new String("null")) ?
+					                null : value.toString();
 				for (Entry<PrimaryKey, Row> entry : selected.values()) {
 					entry.value.updateAttributeByValue(leftRank, rightValue);
 				}			

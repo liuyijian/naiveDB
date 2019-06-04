@@ -230,7 +230,7 @@ public class Row implements Comparable<Row> {
 			rightType = Type.TYPE_DOUBLE;
 		}
 		
-		if (leftType.equals(rightType)) {
+		if (rightValue == null || leftType.equals(rightType)) {
 			this.data.set(leftRank, rightValue);
 		}
 		else if (leftType.equals(Type.TYPE_STRING) || rightType.equals(Type.TYPE_STRING)) {
