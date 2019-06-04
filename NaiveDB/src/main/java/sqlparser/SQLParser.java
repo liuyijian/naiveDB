@@ -127,8 +127,7 @@ public class SQLParser {
     }
 
     public String createTableParser(CreateTable stmt){
-        // 范例语句的输出 "CREATE TABLE person (name String(256), ID Int not null, PRIMARY KEY(ID))"
-        // [name String (256), ID Int not null]
+
         List<String> indexes = stmt.getIndexes().get(0).getColumnsNames();
         for (int i = 0; i < indexes.size(); ++i) {
         	indexes.set(i, indexes.get(i).toUpperCase());
@@ -219,7 +218,13 @@ public class SQLParser {
                 Join joinStmt = joinStmts.get(0);
                 String secondTableName = ((Table)joinStmt.getRightItem()).getName().toUpperCase();
                 Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple2 = whereParser((BinaryExpression) joinStmt.getOnExpression());
-                TreeSet<JointRow> answer = metaData.metaJson.query.select(tableName,secondTableName,tuple2.first,tuple2.second,tuple.first,tuple.second);
+                TreeSet<JointRow> answer;
+                if(joinStmt.isNatural()){
+                    answer = metaData.metaJson.query.selectNatural(tableName,secondTableName,tuple.first,tuple.second);
+                } else{
+                    answer = metaData.metaJson.query.select(tableName,secondTableName,tuple2.first,tuple2.second,tuple.first,tuple.second);
+                }
+
                 Storage firstTable = metaData.metaJson.query.tableStorageMap.get(tableName);
                 Storage secondTable = metaData.metaJson.query.tableStorageMap.get(secondTableName);
             	List<String> header = new ArrayList<String>();
@@ -230,6 +235,7 @@ public class SQLParser {
             		header.add(secondTableName + "." + attr);
             	}
                 return this.printAndReturnSelectedRowsStar(answer, header);
+
             } else{
                 //单表
             	Storage table = metaData.metaJson.query.tableStorageMap.get(tableName);
@@ -247,7 +253,14 @@ public class SQLParser {
                 Join joinStmt = joinStmts.get(0);
                 String secondTableName = ((Table)joinStmt.getRightItem()).getName().toUpperCase();
                 Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple2 = whereParser((BinaryExpression) joinStmt.getOnExpression());
-                TreeSet<JointRow> answer = metaData.metaJson.query.select(tableName,secondTableName,tuple2.first,tuple2.second,tuple.first,tuple.second);
+
+                TreeSet<JointRow> answer;
+
+                if(joinStmt.isNatural()){
+                    answer = metaData.metaJson.query.selectNatural(tableName,secondTableName,tuple.first,tuple.second);
+                } else{
+                    answer = metaData.metaJson.query.select(tableName,secondTableName,tuple2.first,tuple2.second,tuple.first,tuple.second);
+                }
                 return this.printAndReturnSelectedRows(answer, cols);
             } else{
                 //单表
@@ -495,11 +508,12 @@ public class SQLParser {
 //        sqlParser.dealer("UPDATE  person  SET  gender = 'male'  WHERE  name = 'Ben'");
 //        sqlParser.dealer("DELETE FROM person WHERE name = 'Bob'");
         try{
-            Statement sqlStatement = CCJSqlParserUtil.parse("select person.ID,person.name from person join employee on person.ID = employee.ID");
+            Statement sqlStatement = CCJSqlParserUtil.parse("select person.ID,person.name from person join baby on person.name=baby.name where person.ID = employee.ID");
             Select stmt1 = (Select) sqlStatement;
-
-            SQLParser sqlParser = new SQLParser();
             PlainSelect stmt = (PlainSelect) stmt1.getSelectBody();
+            System.out.println(stmt.getFromItem());
+            System.out.println(stmt.getIntoTables());
+
             Expression expression = stmt.getJoins().get(0).getOnExpression();
             System.out.println(expression);
             BinaryExpression binaryExpression = (BinaryExpression) expression;
