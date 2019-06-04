@@ -2,6 +2,7 @@ package query;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
 
@@ -37,6 +38,102 @@ public class Query {
     // drop table 后的减量加载
     public void  downLoadTable(String tableName){
         tableStorageMap.remove(tableName);
+    }
+    
+    public TreeSet<JointRow> selectNatural(String tableNameA, String tableNameB,
+	   Vector<BinaryExpression> where, Vector<Boolean> whereAndOr) throws IOException {
+    
+    	Storage tableA = this.tableStorageMap.get(tableNameA);
+		Storage tableB = this.tableStorageMap.get(tableNameB);
+		TreeSet<JointRow> selected = new TreeSet<JointRow>();
+		
+		Vector<String> attrs = new Vector<>();
+		for (String attr : tableA.getAttributes()) {
+			if (tableB.getAttributes().contains(attr)) {
+				attrs.add(attr);
+			}
+		}
+		
+		Vector<Integer> tableAAttrIndexes = new Vector<>();
+		Vector<Integer> tableBAttrIndexes = new Vector<>();
+		for (String attr : attrs) {
+			Vector<String> tableAAttrs = tableA.getAttributes();
+			Vector<String> tableBAttrs = tableB.getAttributes();
+			for (int i = 0; i < tableAAttrs.size(); ++i) {
+				if (tableAAttrs.get(i).equals(attr)) {
+					tableAAttrIndexes.add(new Integer(i));
+					break;
+				}
+			}
+			for (int i = 0; i < tableBAttrs.size(); ++i) {
+				if (tableBAttrs.get(i).equals(attr)) {
+					tableBAttrIndexes.add(new Integer(i));
+					break;
+				}
+			}
+		}
+		
+		for (Entry<PrimaryKey, Row> entryA : tableA.getIndex()) {
+			for (Entry<PrimaryKey, Row> entryB : tableB.getIndex()) {
+				if (canBeNaturalJoined(entryA, tableAAttrIndexes, entryB, tableBAttrIndexes)) {
+					selected.add(new JointRow(entryA, entryB));						
+				}
+			}
+		}
+		
+		if (where.size() == 0) {
+			return selected;
+		}
+		
+		// where.size() != 0
+		TreeSet<JointRow> originalSelected = selected;
+		
+		TreeSet<JointRow> newSelected = new TreeSet<JointRow>();
+		for (JointRow rowInSelected : originalSelected) {
+			if (rowInSelected.satisfy(where.get(0))) {
+				newSelected.add(rowInSelected);
+			}
+		}
+		selected = newSelected;
+		
+		for (int i = 0; i < whereAndOr.size(); ++i) {
+			BinaryExpression whereExpression = where.get(i + 1);
+			
+			if (whereAndOr.get(i).equals(Type.EXPRESSION_AND)) {
+				newSelected = new TreeSet<JointRow>();
+				for (JointRow rowInSelected : selected) {
+					if (rowInSelected.satisfy(whereExpression)) {
+						newSelected.add(rowInSelected);
+					}
+				}
+				selected = newSelected;
+			}
+			else if (whereAndOr.get(i).equals(Type.EXPRESSION_OR)) {
+				for (JointRow rowInSelected : originalSelected) {
+					if (rowInSelected.satisfy(whereExpression)) {
+						selected.add(rowInSelected);
+					}
+				}
+			}
+		}
+		
+		return selected;
+    }
+    
+    protected static boolean canBeNaturalJoined(Entry<PrimaryKey, Row> entryA, 
+    										    Vector<Integer> tableAAttrIndexes,
+    										    Entry<PrimaryKey, Row> entryB, 
+    										    Vector<Integer> tableBAttrIndexes) {
+    	
+    	if (tableAAttrIndexes.size() != tableBAttrIndexes.size()) {
+    		return false;
+    	}
+    	for (int i = 0; i < tableAAttrIndexes.size(); ++i) {
+    		if (! tableAAttrIndexes.get(i).equals(tableBAttrIndexes.get(i))) {
+    			return false;
+    		}
+    	}
+    	return true;
     }
 	
 	public TreeSet<JointRow> select(String tableNameA, String tableNameB, 

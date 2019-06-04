@@ -61,7 +61,7 @@ public class Storage {
 		this.offset += this.numberOfCol; // extra bytes for recording isNull-signs 
 
 		// TODO: set a reasonable cache size
-		this.cache = new Cache(this, this.offset * 10); 
+		this.cache = new Cache(this, this.offset * 3);
 		
 		this.types = types;
 		this.attrs = attrs;
