@@ -9,6 +9,7 @@ import net.sf.jsqlparser.expression.BinaryExpression;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.relational.*;
 import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.Table;
 import storage.Entry;
 import storage.JointRow;
 import storage.PrimaryKey;
@@ -50,7 +51,7 @@ public class Query {
 			for (Entry<PrimaryKey, Row> entryA : tableA.getIndex()) {
 				for (Entry<PrimaryKey, Row> entryB : tableB.getIndex()) {
 					selected.add(new JointRow(entryA, entryB));	
-				}			
+				}
 			}
 		}
 		else {
@@ -166,7 +167,7 @@ public class Query {
 		}
 		
 		for (int i = 0; i < whereAndOr.size(); ++i) {
-			BinaryExpression expression = where.get(i);
+			BinaryExpression expression = where.get(i + 1);
 
 			if (whereAndOr.get(i).equals(Type.EXPRESSION_AND)) {
 				
@@ -268,8 +269,7 @@ public class Query {
 	public Integer update(String tableName, String columnName, Expression value,
 			              Vector<BinaryExpression> where, Vector<Boolean> whereAndOr) 
 	            		  throws IOException {
-        // set只能set等于，value类型需要在此函数体内进一步考虑
-		
+				
 		Storage table = this.tableStorageMap.get(tableName);
 		HashMap<PrimaryKey, Entry<PrimaryKey, Row>> selected = this.select(
 			tableName, where, whereAndOr);
@@ -280,19 +280,65 @@ public class Query {
 			rightRank = table.getAttributeRank(value.toString());
 		}
 		
-		if (rightRank != null) {
-			for (Entry<PrimaryKey, Row> entry : selected.values()) {
-				entry.value.updateAttributeByRank(leftRank, rightRank);
+		if (table.isPartOfPrimaryKey(columnName)) {
+			TreeSet<PrimaryKey> newPks = new TreeSet<>(); 
+			if (rightRank != null) {
+				for (Entry<PrimaryKey, Row> entry : selected.values()) {
+					Object newValue = entry.value.get(rightRank);
+					newPks.add(entry.value.getNewPrimaryKeyWithoutModification(columnName, 
+							   newValue));
+				}			
+			}
+			else {
+				for (Entry<PrimaryKey, Row> entry : selected.values()) {
+					newPks.add(entry.value.getNewPrimaryKeyWithoutModification(columnName, 
+							   value));
+				}				
+			}
+			
+			if (newPks.size() == selected.size()) {
+				// start to update
+				
+				if (rightRank != null) {
+					for (Entry<PrimaryKey, Row> entry : selected.values()) {
+						Vector<Object> newRow = entry.value.cloneData();
+						newRow.set(leftRank, newRow.get(rightRank));
+						table.deleteEqualPk(entry.key);
+						table.insert(newRow);
+					}
+				}
+				else {
+					Object rightValue = value.toString();
+					for (Entry<PrimaryKey, Row> entry : selected.values()) {
+						Vector<Object> newRow = entry.value.cloneData();
+						newRow.set(leftRank, rightValue);
+						table.deleteEqualPk(entry.key);
+						table.insert(newRow);
+					}			
+				}
+				
+				return selected.size();
+			}
+			else {
+				return 0;							
 			}
 		}
 		else {
-			Object rightValue = value.toString();
-			for (Entry<PrimaryKey, Row> entry : selected.values()) {
-				entry.value.updateAttributeByValue(leftRank, rightValue);
-			}			
+			if (rightRank != null) {
+				for (Entry<PrimaryKey, Row> entry : selected.values()) {
+					entry.value.updateAttributeByRank(leftRank, rightRank);
+				}
+			}
+			else {
+				Object rightValue = value.toString().equals(new String("null")) ?
+					                null : value.toString();
+				for (Entry<PrimaryKey, Row> entry : selected.values()) {
+					entry.value.updateAttributeByValue(leftRank, rightValue);
+				}			
+			}
+			
+			return selected.size();			
 		}
-		
-		return selected.size();
 	}
 	
 	public Integer insert(String tableName, Vector<Object> row) throws IOException {

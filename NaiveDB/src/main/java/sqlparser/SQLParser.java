@@ -20,6 +20,7 @@ import net.sf.jsqlparser.statement.create.table.ColumnDefinition;
 import net.sf.jsqlparser.statement.create.table.CreateTable;
 import net.sf.jsqlparser.statement.drop.Drop;
 import net.sf.jsqlparser.statement.select.Select;
+import net.sf.jsqlparser.statement.select.SelectItem;
 import net.sf.jsqlparser.statement.select.Join;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.insert.Insert;
@@ -32,6 +33,8 @@ import java.util.*;
 
 import org.json.JSONObject;
 
+import github.clyoudu.consoletable.ConsoleTable;
+import github.clyoudu.consoletable.table.Cell;
 import metadata.MetaData;
 import metadata.TableInfo;
 
@@ -120,7 +123,10 @@ public class SQLParser {
         // 范例语句的输出 "CREATE TABLE person (name String(256), ID Int not null, PRIMARY KEY(ID))"
         // [name String (256), ID Int not null]
         List<String> indexes = stmt.getIndexes().get(0).getColumnsNames();
-        String tableName = stmt.getTable().getName();
+        for (int i = 0; i < indexes.size(); ++i) {
+        	indexes.set(i, indexes.get(i).toUpperCase());
+        }
+        String tableName = stmt.getTable().getName().toUpperCase();
         TableInfo tableInfo = new TableInfo();
 
         // 此处不能使用getTablePath接口，因为此表尚且不存在
@@ -128,7 +134,7 @@ public class SQLParser {
 
         for(ColumnDefinition columnDefinition : stmt.getColumnDefinitions()){
             String attrtype = columnDefinition.getColDataType().getDataType().toUpperCase();
-            String attrname = columnDefinition.getColumnName();
+            String attrname = columnDefinition.getColumnName().toUpperCase();
             tableInfo.attrs.add(attrname);
             if(indexes.contains(attrname)){
                 tableInfo.pkattrs.add(attrname);
@@ -151,6 +157,7 @@ public class SQLParser {
         try{
             Storage storage = new Storage(
                     Storage.CONSTRUCT_FROM_NEW_DB,
+                    tableName,
                     tableInfo.filepath,
                     tableInfo.types,
                     tableInfo.attrs,
@@ -178,7 +185,7 @@ public class SQLParser {
 
     public String dropParser(Drop stmt){
         // 此处接受drop table or database
-        String table = stmt.getName().getName();
+        String table = stmt.getName().getName().toUpperCase();
         String type = stmt.getType().toUpperCase();
         if(type.equals("TABLE")){
             return metaData.dropTable(table);
@@ -191,9 +198,9 @@ public class SQLParser {
         // 默认用PlainSelect，不支持UNION，order by
         PlainSelect plainStmt = (PlainSelect) stmt.getSelectBody();
         //拿到列名
-        System.out.println(plainStmt.getSelectItems());
+        List<SelectItem> cols = plainStmt.getSelectItems();
         // 拿到表名
-        String tableName = ((Table)plainStmt.getFromItem()).getName();
+        String tableName = ((Table)plainStmt.getFromItem()).getName().toUpperCase();
         // 拿到where
         Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple = whereParser((BinaryExpression) plainStmt.getWhere());
 
@@ -202,16 +209,15 @@ public class SQLParser {
         if (joinStmts != null){
             // 双表
             Join joinStmt = joinStmts.get(0);
-            String secondTableName = ((Table)joinStmt.getRightItem()).getName();
+            String secondTableName = ((Table)joinStmt.getRightItem()).getName().toUpperCase();
             Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple2 = whereParser((BinaryExpression) joinStmt.getOnExpression());
             TreeSet<JointRow> answer = metaData.metaJson.query.select(tableName,secondTableName,tuple2.first,tuple2.second,tuple.first,tuple.second);
-            return answer.toString();
+            return this.printAndReturnSelectedRows(answer, cols);
         } else{
             //单表
             HashMap<PrimaryKey, Entry<PrimaryKey, Row>> answer = metaData.metaJson.query.select(tableName, tuple.first, tuple.second);
-            return answer.toString();
+            return this.printAndReturnSelectedRows(answer, cols);
         }
-
 
 
 //        BinaryExpression binaryExpression = (BinaryExpression) plainStmt.getWhere();
@@ -228,10 +234,47 @@ public class SQLParser {
 //
 //        return "success";
     }
+    
+    String printAndReturnSelectedRows(TreeSet<JointRow> selected, List<SelectItem> cols) throws IOException {
+    	List<Cell> header = new ArrayList<Cell>();
+    	for (SelectItem col : cols) {
+    		header.add(new Cell(col.toString()));
+    	}
+    	List<List<Cell>> body = new ArrayList<List<Cell>>();
+    	for (JointRow row : selected) {
+    		List<Cell> selectedRow = new ArrayList<Cell>();
+    		for (SelectItem col : cols) {
+    			selectedRow.add(new Cell(row.get(col)));
+    		}
+    		body.add(selectedRow);
+    	}
+    	ConsoleTable consoleTable = new ConsoleTable.ConsoleTableBuilder().addHeaders(header).addRows(body).build();
+    	System.out.println(consoleTable.toString());
+    	return consoleTable.toString();
+    }
+    
+    String printAndReturnSelectedRows(HashMap<PrimaryKey, Entry<PrimaryKey, Row>> selected, List<SelectItem> cols) throws IOException {
+    	List<Cell> header = new ArrayList<Cell>();
+    	for (SelectItem col : cols) {
+    		header.add(new Cell(col.toString()));
+    	}
+    	List<List<Cell>> body = new ArrayList<List<Cell>>();
+    	for (Entry<PrimaryKey, Row> row : selected.values()) {
+    		List<Cell> selectedRow = new ArrayList<Cell>();
+    		for (SelectItem col : cols) {
+    			Object value = row.value.get(col.toString().toUpperCase());
+    			selectedRow.add(new Cell(value == null ? null : value.toString()));
+    		}
+    		body.add(selectedRow);
+    	}
+    	ConsoleTable consoleTable = new ConsoleTable.ConsoleTableBuilder().addHeaders(header).addRows(body).build();
+    	System.out.println(consoleTable.toString());
+    	return consoleTable.toString();
+    }
 
     public String insertParser(Insert stmt) throws IOException{
 
-        String tableName = stmt.getTable().getName();
+        String tableName = stmt.getTable().getName().toUpperCase();
         if(metaData.metaJson.hasTable(tableName)){
             Vector<String> defaultColumnOrder = metaData.metaJson.getAttributesName(tableName);
             Vector<String> columnOrder= new Vector<>();
@@ -239,7 +282,7 @@ public class SQLParser {
             Integer insertRowCount;
             try {
                 for(Column column : stmt.getColumns()){
-                    columnOrder.add(column.getColumnName());
+                    columnOrder.add(column.getColumnName().toUpperCase());
                 }
             } catch (Exception e){
 
@@ -266,7 +309,7 @@ public class SQLParser {
 
     public String deleteParser(Delete stmt) throws IOException{
 
-        String tableName = stmt.getTable().getName();
+        String tableName = stmt.getTable().getName().toUpperCase();
         if(metaData.metaJson.hasTable(tableName)){
             Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple = whereParser((BinaryExpression) stmt.getWhere());
             Integer deleteCount = metaData.metaJson.query.delete(tableName, tuple.first, tuple.second);
@@ -277,12 +320,12 @@ public class SQLParser {
 
     public String updateParser(Update stmt) throws IOException{
 
-        String tableName = stmt.getTables().get(0).getName();
+        String tableName = stmt.getTables().get(0).getName().toUpperCase();
         if(metaData.metaJson.hasTable(tableName)){
             Tuple<Vector<BinaryExpression>, Vector<Boolean>> tuple = whereParser((BinaryExpression) stmt.getWhere());
             Integer updateCount = metaData.metaJson.query.update(
                     tableName,
-                    stmt.getColumns().get(0).getColumnName(),
+                    stmt.getColumns().get(0).getColumnName().toUpperCase(),
                     stmt.getExpressions().get(0),
                     tuple.first,
                     tuple.second
@@ -401,10 +444,8 @@ public class SQLParser {
             BinaryExpression binaryExpression = (BinaryExpression) expression;
             System.out.println(binaryExpression.getLeftExpression() instanceof Column);
             Column column = (Column)(binaryExpression.getLeftExpression());
-            System.out.println(column.getTable().getName());
-            System.out.println(column.getColumnName());
-
-
+            System.out.println(column.getTable().getName().toUpperCase());
+            System.out.println(column.getColumnName().toUpperCase());
         } catch (Exception e){
 
         }

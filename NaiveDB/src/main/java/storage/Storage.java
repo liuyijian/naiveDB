@@ -25,6 +25,7 @@ public class Storage {
     public static final int SINGLE_PRIMARY_KEY_IN_RIGHT_EXPRESSION = 4;
     public static final int SINGLE_PRIMARY_KEY_NOT_EXISTED = 5;
 	
+    protected String           tableName;
 	protected String           fileName;
 	protected RandomAccessFile file;
 	
@@ -46,8 +47,8 @@ public class Storage {
 	
 	protected Cache cache;
 	
-    public Storage(Integer mode, String fileName, Vector<Integer> types, 
-    		       Vector<String> attrs, Vector<Integer> pkTypes, 
+    public Storage(Integer mode, String tableName, String fileName, 
+    		       Vector<Integer> types, Vector<String> attrs, Vector<Integer> pkTypes, 
     		       Vector<String> pkAttrs, Vector<Integer> offsetsInRow, 
     		       Vector<Boolean> notNull) throws IOException {
 		
@@ -64,6 +65,9 @@ public class Storage {
 		
 		this.types = types;
 		this.attrs = attrs;
+		for (int i = 0; i < this.attrs.size(); ++i) {
+			this.attrs.set(i, this.attrs.get(i).toUpperCase());
+		}
 		for (String attr : this.attrs) {
 			attr = attr.toUpperCase();
 		}
@@ -80,12 +84,13 @@ public class Storage {
 		}
 		this.notNull = notNull;
 		
+		this.tableName = tableName.toUpperCase();
 		this.fileName = fileName;
 		this.file = new RandomAccessFile(fileName, "rw");
 		this.data = new Vector<Row>();
 		this.availableRows = new Stack<Integer>();
 		
-		if (mode == CONSTRUCT_FROM_NEW_DB) {
+		if (mode.equals(CONSTRUCT_FROM_NEW_DB)) {
 		
 	    	this.numberOfRow = INITIAL_NUMBER_OF_ROW;
 			for (int i = 0; i < INITIAL_NUMBER_OF_ROW; ++i) {
@@ -101,7 +106,7 @@ public class Storage {
 			}
 			this.initBPlusTree(CONSTRUCT_FROM_NEW_DB);
 						
-		} else if (mode == CONSTRUCT_FROM_EXISTED_DB) {
+		} else if (mode.equals(CONSTRUCT_FROM_EXISTED_DB)) {
 			
 	    	this.numberOfRow = (int) (this.file.length() / this.offset);
 	    	for (int i = 0; i < this.numberOfRow; ++i) {
@@ -132,6 +137,8 @@ public class Storage {
     
     public Integer getAttributeRank(String colName) {
     	
+    	colName = colName.toUpperCase();
+    	
     	for (int i = 0; i < this.attrs.size(); ++i) {
     		if (this.attrs.get(i).equals(colName)) {
     			return i;
@@ -154,19 +161,19 @@ public class Storage {
     	
 		for (int i = 0; i < this.numberOfCol; ++i) {
     		try {
-        		if (this.types.get(i) == Type.TYPE_INT) {
+        		if (this.types.get(i).equals(Type.TYPE_INT)) {
         			data.set(i, Integer.valueOf(data.get(i).toString()));
         		}
-        		else if (this.types.get(i) == Type.TYPE_LONG) {
+        		else if (this.types.get(i).equals(Type.TYPE_LONG)) {
         			data.set(i, Long.valueOf(data.get(i).toString()));
         		}
-        		else if (this.types.get(i) == Type.TYPE_FLOAT) {
+        		else if (this.types.get(i).equals(Type.TYPE_FLOAT)) {
         			data.set(i, Float.valueOf(data.get(i).toString()));
         		}
-        		else if (this.types.get(i) == Type.TYPE_DOUBLE) {
+        		else if (this.types.get(i).equals(Type.TYPE_DOUBLE)) {
         			data.set(i, Double.valueOf(data.get(i).toString()));
         		}
-        		else if (this.types.get(i) == Type.TYPE_STRING) {
+        		else if (this.types.get(i).equals(Type.TYPE_STRING)) {
         			data.set(i, data.get(i).toString());
         		}    			
     		}
@@ -178,7 +185,12 @@ public class Storage {
     
     public boolean isAttribute(Object attr) {
     	
-    	return attr instanceof String && this.attrs.contains((String) attr);
+    	return attr instanceof String && this.attrs.contains(((String) attr).toUpperCase());
+    }
+    
+    public boolean isPartOfPrimaryKey(Object attr) {
+    	
+    	return attr instanceof String && this.pkAttrs.contains(((String) attr).toUpperCase());
     }
     
 	public Integer insert(Vector<Object> data) throws IOException {
@@ -235,7 +247,7 @@ public class Storage {
 
 		Double leftValue = Double.valueOf(left.toString());
 		Double rightValue = Double.valueOf(right.toString());
-		return leftValue.compareTo(rightValue);
+		return leftValue.compareTo(rightValue);			
 	}
 	
 	public HashMap<PrimaryKey, Entry<PrimaryKey, Row>> filtrateEqual(
@@ -246,17 +258,17 @@ public class Storage {
 		Object left = leftExpression;
 		Object right = rightExpression;
 		boolean leftIsAttribute = leftExpression instanceof String 
-				                  && this.isAttribute((String) leftExpression);
+				                  && this.isAttribute(((String) leftExpression).toUpperCase());
 		boolean rightIsAttribute = rightExpression instanceof String
-								   && this.isAttribute((String) rightExpression);
+								   && this.isAttribute(((String) rightExpression).toUpperCase());
 		
 		if (leftIsAttribute && rightIsAttribute) {
 			for (Entry<PrimaryKey, Row> entry 
 			    : iterable instanceof BPlusTree
 			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
 			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
-				left = entry.value.get((String) leftExpression);
-				right = entry.value.get((String) rightExpression);
+				left = entry.value.get(((String) leftExpression).toUpperCase());
+				right = entry.value.get(((String) rightExpression).toUpperCase());
 				if (attributeCompare(left, right) == 0) {
 					result.put(entry.key, entry);
 				}
@@ -267,7 +279,7 @@ public class Storage {
 			    : iterable instanceof BPlusTree
 			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
 			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
-				left = entry.value.get((String) leftExpression);
+				left = entry.value.get(((String) leftExpression).toUpperCase());
 				if (attributeCompare(left, right) == 0) {
 					result.put(entry.key, entry);
 				}
@@ -278,7 +290,7 @@ public class Storage {
 			    : iterable instanceof BPlusTree
 			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
 			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
-				right = entry.value.get((String) rightExpression);
+				right = entry.value.get(((String) rightExpression).toUpperCase());
 				if (attributeCompare(left, right) == 0) {
 					result.put(entry.key, entry);
 				}
@@ -307,17 +319,17 @@ public class Storage {
 		Object left = leftExpression;
 		Object right = rightExpression;
 		boolean leftIsAttribute = leftExpression instanceof String 
-								  && this.isAttribute((String) leftExpression);
+								  && this.isAttribute(((String) leftExpression).toUpperCase());
 		boolean rightIsAttribute = rightExpression instanceof String
-								  && this.isAttribute((String) rightExpression);
+								  && this.isAttribute(((String) rightExpression).toUpperCase());
 
 		if (leftIsAttribute && rightIsAttribute) {
 			for (Entry<PrimaryKey, Row> entry 
 			    : iterable instanceof BPlusTree
 			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
 			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
-				left = entry.value.get((String) leftExpression);
-				right = entry.value.get((String) rightExpression);
+				left = entry.value.get(((String) leftExpression).toUpperCase());
+				right = entry.value.get(((String) rightExpression).toUpperCase());
 				if (isEqualInclusive) {
 					if (attributeCompare(left, right) >= 0) {
 						result.put(entry.key, entry);
@@ -335,7 +347,7 @@ public class Storage {
 			    : iterable instanceof BPlusTree
 			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
 			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
-				left = entry.value.get((String) leftExpression);
+				left = entry.value.get(((String) leftExpression).toUpperCase());
 				if (isEqualInclusive) {
 					if (attributeCompare(left, right) >= 0) {
 						result.put(entry.key, entry);
@@ -353,7 +365,7 @@ public class Storage {
 			    : iterable instanceof BPlusTree
 			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
 			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
-				right = entry.value.get((String) rightExpression);
+				right = entry.value.get(((String) rightExpression).toUpperCase());
 				if (isEqualInclusive) {
 					if (attributeCompare(left, right) >= 0) {
 						result.put(entry.key, entry);
@@ -401,17 +413,17 @@ public class Storage {
 		Object left = leftExpression;
 		Object right = rightExpression;
 		boolean leftIsAttribute = leftExpression instanceof String 
-								  && this.isAttribute((String) leftExpression);
+								  && this.isAttribute(((String) leftExpression).toUpperCase());
 		boolean rightIsAttribute = rightExpression instanceof String
-								   && this.isAttribute((String) rightExpression);
+								   && this.isAttribute(((String) rightExpression).toUpperCase());
 		
 		if (leftIsAttribute && rightIsAttribute) {
 			for (Entry<PrimaryKey, Row> entry 
 			    : iterable instanceof BPlusTree
 			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
 			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
-				left = entry.value.get((String) leftExpression);
-				right = entry.value.get((String) rightExpression);
+				left = entry.value.get(((String) leftExpression).toUpperCase());
+				right = entry.value.get(((String) rightExpression).toUpperCase());
 				if (isEqualInclusive) {
 					if (attributeCompare(left, right) <= 0) {
 						result.put(entry.key, entry);
@@ -429,7 +441,7 @@ public class Storage {
 			    : iterable instanceof BPlusTree
 			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
 			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
-				left = entry.value.get((String) leftExpression);
+				left = entry.value.get(((String) leftExpression).toUpperCase());
 				if (isEqualInclusive) {
 					if (attributeCompare(left, right) <= 0) {
 						result.put(entry.key, entry);
@@ -447,7 +459,7 @@ public class Storage {
 			    : iterable instanceof BPlusTree
 			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
 			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
-				right = entry.value.get((String) rightExpression);
+				right = entry.value.get(((String) rightExpression).toUpperCase());
 				if (isEqualInclusive) {
 					if (attributeCompare(left, right) <= 0) {
 						result.put(entry.key, entry);
@@ -496,17 +508,17 @@ public class Storage {
 		Object left = leftExpression;
 		Object right = rightExpression;
 		boolean leftIsAttribute = leftExpression instanceof String 
-								  && this.isAttribute((String) leftExpression);
+								  && this.isAttribute(((String) leftExpression).toUpperCase());
 		boolean rightIsAttribute = rightExpression instanceof String
-							      && this.isAttribute((String) rightExpression);
+							      && this.isAttribute(((String) rightExpression).toUpperCase());
 
 		if (leftIsAttribute && rightIsAttribute) {
 			for (Entry<PrimaryKey, Row> entry 
 			    : iterable instanceof BPlusTree
 			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
 			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
-				left = entry.value.get((String) leftExpression);
-				right = entry.value.get((String) rightExpression);
+				left = entry.value.get(((String) leftExpression).toUpperCase());
+				right = entry.value.get(((String) rightExpression).toUpperCase());
 				if (attributeCompare(left, right) != 0) {
 					result.put(entry.key, entry);
 				}
@@ -517,7 +529,7 @@ public class Storage {
 			    : iterable instanceof BPlusTree
 			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
 			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
-				left = entry.value.get((String) leftExpression);
+				left = entry.value.get(((String) leftExpression).toUpperCase());
 				if (attributeCompare(left, right) != 0) {
 					result.put(entry.key, entry);
 				}
@@ -528,7 +540,7 @@ public class Storage {
 			    : iterable instanceof BPlusTree
 			        ? ((BPlusTree<PrimaryKey, Row>) iterable) 
 			        : ((HashMap<PrimaryKey, Entry<PrimaryKey, Row>>) iterable).values()) {
-				right = entry.value.get((String) rightExpression);
+				right = entry.value.get(((String) rightExpression).toUpperCase());
 				if (attributeCompare(left, right) != 0) {
 					result.put(entry.key, entry);
 				}
@@ -750,19 +762,19 @@ public class Storage {
     	
     	for (int i = 0; i < this.numberOfCol; ++i) {
     		
-    		if (this.types.get(i) == Type.TYPE_INT) {
+    		if (this.types.get(i).equals(Type.TYPE_INT)) {
     			this.file.writeInt(0);
     		}
-    		else if (this.types.get(i) == Type.TYPE_LONG) {
+    		else if (this.types.get(i).equals(Type.TYPE_LONG)) {
     			this.file.writeLong(0);
     		}
-    		else if (this.types.get(i) == Type.TYPE_FLOAT) {
+    		else if (this.types.get(i).equals(Type.TYPE_FLOAT)) {
     			this.file.writeFloat(0);
     		}
-    		else if (this.types.get(i) == Type.TYPE_DOUBLE) {
+    		else if (this.types.get(i).equals(Type.TYPE_DOUBLE)) {
     			this.file.writeDouble(0);
     		}
-    		else if (this.types.get(i) == Type.TYPE_STRING) {
+    		else if (this.types.get(i).equals(Type.TYPE_STRING)) {
     			writeFixedString("", this.offsetsInRow.get(i) / 2, this.file);
     		}
        	}
@@ -777,10 +789,10 @@ public class Storage {
 
     	this.index = new BPlusTree<PrimaryKey, Row>(BPLUSTREE_ORDER);
     	
-    	if (mode == CONSTRUCT_FROM_NEW_DB) {
+    	if (mode.equals(CONSTRUCT_FROM_NEW_DB)) {
     		;
     	}
-    	else if (mode == CONSTRUCT_FROM_EXISTED_DB) {
+    	else if (mode.equals(CONSTRUCT_FROM_EXISTED_DB)) {
     		
     		for (int i = 0; i < this.numberOfRow; ++i) {
     			
@@ -864,5 +876,10 @@ public class Storage {
 	public BPlusTree<PrimaryKey, Row> getIndex() {
 		
 		return this.index;
+	}
+	
+	public String getTableName() {
+		
+		return this.tableName;
 	}
 }

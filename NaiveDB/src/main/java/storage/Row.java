@@ -36,6 +36,34 @@ public class Row implements Comparable<Row> {
 		this.isModified  = null;
 	}
 	
+	public Vector<Object> cloneData() {
+		
+		Vector<Object> ret = new Vector<Object>();
+		
+		for (Object o : this.data) {
+			if (o instanceof Integer) {
+				ret.add(new Integer(Integer.valueOf(0)));
+			}
+			else if (o instanceof Long) {
+				ret.add(new Long(Long.valueOf(0)));
+			}
+			else if (o instanceof Float) {
+				ret.add(new Float(Float.valueOf(0)));
+			}
+			else if (o instanceof Double) {
+				ret.add(new Double(Double.valueOf(0)));
+			}
+			else if (o instanceof String) {
+				ret.add(new String(o.toString()));
+			} 
+			else {
+				ret.add(null);
+			}
+		}
+		
+		return ret;
+	}
+	
 	public void release() throws IOException {
 		
 		if (!this.isInMemory || !this.isModified) {
@@ -69,6 +97,29 @@ public class Row implements Comparable<Row> {
 		}
 		
 		return this.pks;
+	}
+	
+	public PrimaryKey getNewPrimaryKeyWithoutModification(String attr, Object value) 
+			                                              throws IOException {
+		
+		if (! this.isInMemory) {
+			this.readFromFile();
+		}
+		
+		PrimaryKey newPk = (PrimaryKey) this.pks.clone();
+		Integer rank = -1;
+		for (int i = 0; i < this.storage.numberOfCol; ++i) {
+			String a = this.storage.attrs.get(i);
+			if (this.storage.pkAttrs.contains(a)) {
+				++rank;
+			}
+			if (attr.equals(a)) {
+				break;
+			}
+		}
+		newPk.setAttribute(rank, value);		
+		
+		return newPk;
 	}
 	
 	public Object get(int i) throws IOException {
@@ -135,26 +186,33 @@ public class Row implements Comparable<Row> {
 		if (leftType.equals(rightType)) {
 			this.data.set(leftRank, this.data.get(rightRank));
 		}
-		else if (leftType == Type.TYPE_STRING || rightType == Type.TYPE_STRING) {
-			throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
-		}
+//		else if (leftType.equals(Type.TYPE_STRING) || rightType.equals(Type.TYPE_STRING)) {
+//			throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
+//		}
 		else {
 			Object rightValue = this.data.get(rightRank);
-			if (leftType == Type.TYPE_INT) {
+			if (leftType.equals(Type.TYPE_INT)) {
 				this.data.set(leftRank, rightValue == null ? 
 					null : Integer.valueOf(rightValue.toString()));
 			}
-			else if (leftType == Type.TYPE_LONG) {
+			else if (leftType.equals(Type.TYPE_LONG)) {
 				this.data.set(leftRank, rightValue == null ? 
 					null : Long.valueOf(rightValue.toString()));				
 			}
-			else if (leftType == Type.TYPE_FLOAT) {
+			else if (leftType.equals(Type.TYPE_FLOAT)) {
 				this.data.set(leftRank, rightValue == null ? 
 					null : Float.valueOf(rightValue.toString()));
 			}
-			else if (leftType == Type.TYPE_DOUBLE) {
+			else if (leftType.equals(Type.TYPE_DOUBLE)) {
 				this.data.set(leftRank, rightValue == null ? 
 					null : Double.valueOf(rightValue.toString()));
+			}
+			else if (leftType.equals(Type.TYPE_STRING)) {
+				this.data.set(leftRank, rightValue == null ? 
+					null : rightValue.toString());
+			}
+			else {
+				throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
 			}
 		}
 	}
@@ -182,25 +240,32 @@ public class Row implements Comparable<Row> {
 		if (leftType.equals(rightType)) {
 			this.data.set(leftRank, rightValue);
 		}
-		else if (leftType == Type.TYPE_STRING || rightType == Type.TYPE_STRING) {
-			throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
-		}
+//		else if (leftType.equals(Type.TYPE_STRING) || rightType.equals(Type.TYPE_STRING)) {
+//			throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
+//		}
 		else {
-			if (leftType == Type.TYPE_INT) {
+			if (leftType.equals(Type.TYPE_INT)) {
 				this.data.set(leftRank, rightValue == null ? 
 					null : Integer.valueOf(rightValue.toString()));
 			}
-			else if (leftType == Type.TYPE_LONG) {
+			else if (leftType.equals(Type.TYPE_LONG)) {
 				this.data.set(leftRank, rightValue == null ? 
 					null : Long.valueOf(rightValue.toString()));				
 			}
-			else if (leftType == Type.TYPE_FLOAT) {
+			else if (leftType.equals(Type.TYPE_FLOAT)) {
 				this.data.set(leftRank, rightValue == null ? 
 					null : Float.valueOf(rightValue.toString()));
 			}
-			else if (leftType == Type.TYPE_DOUBLE) {
+			else if (leftType.equals(Type.TYPE_DOUBLE)) {
 				this.data.set(leftRank, rightValue == null ? 
 					null : Double.valueOf(rightValue.toString()));
+			}
+			else if (leftType.equals(Type.TYPE_STRING)) {
+				this.data.set(leftRank, rightValue == null ? 
+					null : rightValue.toString());
+			}
+			else {
+				throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): convert failed!");
 			}
 		}
 	}
@@ -263,19 +328,19 @@ public class Row implements Comparable<Row> {
 		
 		for (int i = 0; i < numberOfCol; ++i) {
 			
-			if (storage.types.get(i) == Type.TYPE_INT) {
+			if (storage.types.get(i).equals(Type.TYPE_INT)) {
     			data.add(new Integer(0));
     		}
-    		else if (storage.types.get(i) == Type.TYPE_LONG) {
+    		else if (storage.types.get(i).equals(Type.TYPE_LONG)) {
     			data.add(new Long(0));
     		}
-    		else if (storage.types.get(i) == Type.TYPE_FLOAT) {
+    		else if (storage.types.get(i).equals(Type.TYPE_FLOAT)) {
     			data.add(new Float(0));
     		}
-    		else if (storage.types.get(i) == Type.TYPE_DOUBLE) {
+    		else if (storage.types.get(i).equals(Type.TYPE_DOUBLE)) {
     			data.add(new Double(0));
     		}
-    		else if (storage.types.get(i) == Type.TYPE_STRING) {
+    		else if (storage.types.get(i).equals(Type.TYPE_STRING)) {
     			data.add(new String(""));
     		}
 		}
@@ -299,19 +364,19 @@ public class Row implements Comparable<Row> {
 		this.data = new Vector<Object>();
 		for (int i = 0; i < storage.numberOfCol; ++i) {
 			
-			if (storage.types.get(i) == Type.TYPE_INT) {
+			if (storage.types.get(i).equals(Type.TYPE_INT)) {
     			this.data.add(file.readInt());
     		}
-    		else if (storage.types.get(i) == Type.TYPE_LONG) {
+    		else if (storage.types.get(i).equals(Type.TYPE_LONG)) {
     			this.data.add(file.readLong());
     		}
-    		else if (storage.types.get(i) == Type.TYPE_FLOAT) {
+    		else if (storage.types.get(i).equals(Type.TYPE_FLOAT)) {
     			this.data.add(file.readFloat());
     		}
-    		else if (storage.types.get(i) == Type.TYPE_DOUBLE) {
+    		else if (storage.types.get(i).equals(Type.TYPE_DOUBLE)) {
     			this.data.add(file.readDouble());
     		}
-    		else if (storage.types.get(i) == Type.TYPE_STRING) {
+    		else if (storage.types.get(i).equals(Type.TYPE_STRING)) {
     			this.data.add(Storage.readFixedString(storage.offsetsInRow.get(i) / 2, 
     					                              file));
     		}
@@ -350,35 +415,35 @@ public class Row implements Comparable<Row> {
 		file.writeBoolean(this.isAvailable);
 		for (int i = 0; i < this.storage.numberOfCol; ++i) {
 			
-			if (storage.types.get(i) == Type.TYPE_INT) {
+			if (storage.types.get(i).equals(Type.TYPE_INT)) {
 				
 				if (this.isNull.get(i)) {
 					this.data.set(i, new Integer(0));
 				}
     			file.writeInt(((Integer) this.data.get(i)).intValue());
     		}
-    		else if (storage.types.get(i) == Type.TYPE_LONG) {
+    		else if (storage.types.get(i).equals(Type.TYPE_LONG)) {
     			
     			if (this.isNull.get(i)) {
 					this.data.set(i, new Long(0));
 				}
     			file.writeLong(((Long) this.data.get(i)).longValue());
     		}
-    		else if (storage.types.get(i) == Type.TYPE_FLOAT) {
+    		else if (storage.types.get(i).equals(Type.TYPE_FLOAT)) {
     			
     			if (this.isNull.get(i)) {
 					this.data.set(i, new Float(0));
 				}
     			file.writeFloat(((Float) this.data.get(i)).floatValue());
     		}
-    		else if (storage.types.get(i) == Type.TYPE_DOUBLE) {
+    		else if (storage.types.get(i).equals(Type.TYPE_DOUBLE)) {
     			
     			if (this.isNull.get(i)) {
 					this.data.set(i, new Double(0));
 				}
     			file.writeDouble(((Double) this.data.get(i)).doubleValue());
     		}
-    		else if (storage.types.get(i) == Type.TYPE_STRING) {
+    		else if (storage.types.get(i).equals(Type.TYPE_STRING)) {
     			
     			if (this.isNull.get(i)) {
 					this.data.set(i, new String(""));
@@ -401,6 +466,13 @@ public class Row implements Comparable<Row> {
 	
 	@Override
 	public String toString() {
+		
+		if (! this.isInMemory) {
+			try {
+				this.readFromFile();
+			} catch (IOException e) {
+			}
+		}
 		
 		return "<" + this.isAvailable + ", " + (this.data == null ? "null" : 
 			   this.data.toString()) + ", " + (this.isNull == null ? "null" : 
@@ -432,35 +504,35 @@ public class Row implements Comparable<Row> {
 			
 			Object left = this.data.get(i);
 			Object right = row.data.get(i);
-			if (storage.types.get(i) == Type.TYPE_INT) {
+			if (storage.types.get(i).equals(Type.TYPE_INT)) {
 				int result = ((Integer) left).compareTo((Integer) right);
 				if (result == 0) {
 					continue;
 				}
 				return result;
     		}
-    		else if (storage.types.get(i) == Type.TYPE_LONG) {
+    		else if (storage.types.get(i).equals(Type.TYPE_LONG)) {
     			int result = ((Long) left).compareTo((Long) right);
 				if (result == 0) {
 					continue;
 				}
 				return result;
     		}
-    		else if (storage.types.get(i) == Type.TYPE_FLOAT) {
+    		else if (storage.types.get(i).equals(Type.TYPE_FLOAT)) {
     			int result = ((Float) left).compareTo((Float) right);
 				if (result == 0) {
 					continue;
 				}
 				return result;
     		}
-    		else if (storage.types.get(i) == Type.TYPE_DOUBLE) {
+    		else if (storage.types.get(i).equals(Type.TYPE_DOUBLE)) {
     			int result = ((Double) left).compareTo((Double) right);
 				if (result == 0) {
 					continue;
 				}
 				return result;
     		}
-    		else if (storage.types.get(i) == Type.TYPE_STRING) {
+    		else if (storage.types.get(i).equals(Type.TYPE_STRING)) {
     			int result = ((String) left).compareTo((String) right);
 				if (result == 0) {
 					continue;

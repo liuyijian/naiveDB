@@ -1,20 +1,24 @@
 auth admin 123456;
 use database database1;
-Drop table person;
-CREATE TABLE person (name String(256) not null, ID Int not null, PRIMARY KEY(ID));
-insert into person values ('lls', 0);
-insert into person values ('lls', 1);
-insert into person values ('lls', 2);
-insert into person values ('lls', 3);
-insert into person values ('lls', 4);
-insert into person values ('syr', 5);
-insert into person values ('syr', 6);
-insert into person values ('syr', 7);
-insert into person values ('syr', 8);
-insert into person values ('syr', 9);
-insert into person values ('syr', 10);
-insert into person values ('syr', 11);
-insert into person values ('syr', 12);
-insert into person values ('syr', 13);
-insert into person values ('syr', 14);
-delete from person where id >= 10 or id > 7 or id = 1 or id > 9;
+drop table avengers;
+create table avengers
+    (id         int not null, 
+     name           string(32) not null, 
+     power  int not null,
+     weight     float,
+     height     double,
+     primary key (ID)
+    );
+INSERT INTO avengers VALUES (10, 'Captain', 50, 78.1, 1.85);
+INSERT INTO avengers VALUES (3, 'Thor', 90, 92.1, 1.89);
+INSERT INTO avengers VALUES (7, 'IronMan', 85, 82.1, 1.76);
+INSERT INTO avengers VALUES (4, 'rocket', 40, 42.1, 0.76);
+INSERT INTO avengers VALUES (5, 'Groot', 10, 182.1, 2.76);
+
+DELETE FROM avengers WHERE name = 'Groot';
+
+UPDATE avengers SET power = 100 WHERE name = 'Captain';
+    
+select id, name from avengers where id = 4;
+
+select id, name from avengers;

@@ -39,6 +39,7 @@ public class MetaJson {
             for(String tableName : this.singleMetaJsonObject.keySet()){
                 Storage storage = new Storage(
                         Storage.CONSTRUCT_FROM_EXISTED_DB,
+                        tableName,
                         getTablePath(tableName),
                         getAttributesType(tableName),
                         getAttributesName(tableName),

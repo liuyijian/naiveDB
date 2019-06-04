@@ -32,7 +32,7 @@ public class Cache {
 				Integer orderOfRowInCache = this.cache.getFirst();
 				Integer countOfRowInCache = this.count.get(orderOfRowInCache);
 				
-				if (countOfRowInCache == 1) {
+				if (countOfRowInCache.equals(1)) {
 				
 					this.storage.data.get(orderOfRowInCache).release();
 					
