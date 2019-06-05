@@ -402,6 +402,11 @@ public class Query {
 		}
 		
 		if (table.isPartOfPrimaryKey(columnName)) {
+			if (value.toString().toUpperCase().equals(new String("NULL"))) {
+				throw new CustomerException("Storage", "update():" 
+						  + " pks can not be null value!");
+			}
+			
 			TreeSet<PrimaryKey> newPks = new TreeSet<>(); 
 			if (rightRank != null) {
 				for (Entry<PrimaryKey, Row> entry : selected.values()) {
@@ -451,8 +456,7 @@ public class Query {
 				}
 			}
 			else {
-				Object rightValue = value.toString().equals(new String("null")) ?
-					                null : value.toString();
+				Object rightValue = value.toString();
 				for (Entry<PrimaryKey, Row> entry : selected.values()) {
 					entry.value.updateAttributeByValue(leftRank, rightValue);
 				}			

@@ -245,6 +245,9 @@ public class Storage {
 			if (left == null && right == null) {
 				return 0;
 			}
+			else if (left == null) {
+				return -1;
+			}
 			else {
 				return 1;
 			}
@@ -252,10 +255,19 @@ public class Storage {
 		else if (left instanceof String && right instanceof String) {
 			return ((String) left).compareTo((String) right);
 		} 
+		else if (left instanceof String || right instanceof String) {
+			throw new CustomerException("Storage", left.toString() + " and " 
+		          + right.toString() + " can not be compared.");			
+		}
 		else {
-			Double leftValue = Double.valueOf(left.toString());
-			Double rightValue = Double.valueOf(right.toString());
-			return leftValue.compareTo(rightValue);			
+			try {
+				Double leftValue = Double.valueOf(left.toString());
+				Double rightValue = Double.valueOf(right.toString());
+				return leftValue.compareTo(rightValue);							
+			}
+			catch (Exception e) {
+				throw new CustomerException("Storage", "attributeCompare(): attrs can not be compared!");
+			}
 		}
 	}
 	
