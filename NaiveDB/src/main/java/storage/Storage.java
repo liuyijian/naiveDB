@@ -151,7 +151,9 @@ public class Storage {
     	
     	for (int i = 0; i < this.numberOfCol; ++i) {
     		
-    		if (data.get(i).toString().equals(new String("NULL")) && this.notNull.get(i)) {
+    		Object current = data.get(i);
+    		if ((current == null || current.toString().equals(new String("NULL")))
+				&& this.notNull.get(i)) {
     			throw new CustomerException("Storage", "checkNull(): " + this.attrs.get(i) + " can not be null!");
     		}
     	}
@@ -161,7 +163,7 @@ public class Storage {
     	
 		for (int i = 0; i < this.numberOfCol; ++i) {
     		try {
-    			if (data.get(i).toString().equals(new String("NULL"))) {
+    			if (data.get(i) == null || data.get(i).toString().equals(new String("NULL"))) {
     				data.set(i, null);
     			}
     			else if (this.types.get(i).equals(Type.TYPE_INT)) {
