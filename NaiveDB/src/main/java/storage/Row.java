@@ -182,8 +182,8 @@ public class Row implements Comparable<Row> {
 		
 		Object rightValue = this.data.get(rightRank);
 		if (rightValue == null) {
-			if (this.isNull.get(leftRank).equals(new Boolean(true))) {
-				throw new CustomerException("Storage", "tryToConvertAndAssignByRank():" 
+			if (this.storage.notNull.get(leftRank).equals(new Boolean(true))) {
+				throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): " 
 					  + this.storage.attrs.get(leftRank) + " can not be null!");
 			}
 		}
@@ -227,8 +227,8 @@ public class Row implements Comparable<Row> {
 			rightValue = new String("NULL");
 		}
 		if (rightValue.toString().toUpperCase().equals(new String("NULL"))) {
-			if (this.isNull.get(leftRank).equals(new Boolean(true))) {
-				throw new CustomerException("Storage", "tryToConvertAndAssignByRank():" 
+			if (this.storage.notNull.get(leftRank).equals(new Boolean(true))) {
+				throw new CustomerException("Storage", "tryToConvertAndAssignByRank(): " 
 					  + this.storage.attrs.get(leftRank) + " can not be null!");
 			}
 		}
