@@ -257,10 +257,6 @@ public class Storage {
 		else if (left instanceof String && right instanceof String) {
 			return ((String) left).compareTo((String) right);
 		} 
-		else if (left instanceof String || right instanceof String) {
-			throw new CustomerException("Storage", left.toString() + " and " 
-		          + right.toString() + " can not be compared.");			
-		}
 		else {
 			try {
 				Double leftValue = Double.valueOf(left.toString());
