@@ -1,0 +1,1 @@
+{"AVENGERS":{"types":[3,7,3,5],"filepath":"databases/SYR/AVENGERS.db","offsets":[4,64,4,4],"pktypes":[3],"notnull":[true,true,true,false],"pkattrs":["ID"],"attrs":["ID","NAME","POWER","WEIGHT"]}}
