@@ -1,15 +1,9 @@
 package sqlparser;
 
-
-
-import metadata.MetaJson;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.operators.conditional.AndExpression;
 import net.sf.jsqlparser.expression.operators.conditional.OrExpression;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
-import net.sf.jsqlparser.expression.operators.relational.GreaterThan;
-import net.sf.jsqlparser.expression.operators.relational.GreaterThanEquals;
-import net.sf.jsqlparser.expression.operators.relational.ItemsList;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.Statement;
 import net.sf.jsqlparser.schema.Table;
@@ -27,7 +21,6 @@ import net.sf.jsqlparser.statement.insert.Insert;
 import net.sf.jsqlparser.statement.delete.Delete;
 import net.sf.jsqlparser.statement.update.Update;
 
-
 import java.io.IOException;
 import java.util.*;
 
@@ -44,7 +37,6 @@ import util.CustomerException;
 
 public class SQLParser {
 
-
     public MetaData metaData;
 
     // 初始化函数
@@ -57,7 +49,7 @@ public class SQLParser {
 //            metaData.metaJson = new MetaJson("database1");
         }
         catch (IOException e){
-            e.printStackTrace();
+//            e.printStackTrace();
         }
     }
 
@@ -70,7 +62,6 @@ public class SQLParser {
             answerString.append(abstractParser(sql.trim()));
             answerString.append("\n");
         }
-//        System.out.println(answerString);
         return answerString;
     }
 
@@ -85,17 +76,19 @@ public class SQLParser {
                 return "";
             }
             else if(checkCreateDatabase(arr)){
-                return metaData.createDatabase(arr[2]);
+                return metaData.createDatabase(arr[2].toUpperCase());
             } else if(checkShowDatabase(arr)){
-                return metaData.showDatabaseTables(arr[2]);
+                return metaData.showDatabaseTables(arr[2].toUpperCase());
             } else if(checkShowDatabases(arr)){
                 return metaData.showDatabases();
             } else if(checkUseDatabase(arr)){
-                return metaData.switchDatabase(arr[2]);
+                return metaData.switchDatabase(arr[2].toUpperCase());
             } else if(checkLoginCommand(arr)){
                 return metaData.login(arr[1], arr[2]);
+            } else if(checkLogoutCommand(arr[0])) {
+            	return metaData.logout();
             } else if(checkShowTable(arr)){
-                return metaData.metaJson.showTableInfo(arr[2]);
+                return metaData.metaJson.showTableInfo(arr[2].toUpperCase());
             }
             else{
                 Statement sqlStatement = CCJSqlParserUtil.parse(sql);
@@ -118,15 +111,18 @@ public class SQLParser {
             }
         }
         catch (IOException e){
-            return "IOException";
+            return "IO Exception | " + e.getMessage();
+        }
+        catch (JSQLParserException e) {
+        	return "SQL Parser Exception | " + e.getMessage();
         }
         catch (CustomerException e) {
         	return e.code + " | " + e.msg;
-        }        
+        }
         catch (Exception e){
-            System.out.println("this sql fuck: "+sql);
+            System.out.println("This sql fuck: " + sql);
             e.printStackTrace();
-            return "Unknown Exception";
+            return "Illegal operation!";
         }
     }
 
@@ -178,7 +174,7 @@ public class SQLParser {
             );
             metaData.metaJson.query.upLoadTable(tableName, storage);
         } catch(IOException e){
-            e.printStackTrace();
+//            e.printStackTrace();
         }
 
         JSONObject jsonObject = new JSONObject();
@@ -231,7 +227,13 @@ public class SQLParser {
 
                 Storage firstTable = metaData.metaJson.query.tableStorageMap.get(tableName);
                 Storage secondTable = metaData.metaJson.query.tableStorageMap.get(secondTableName);
-            	List<String> header = new ArrayList<String>();
+            	if (firstTable == null) {
+            		throw new CustomerException("SQLParser", "Table " + tableName + " is not existed.");
+            	}
+            	if (secondTable == null) {
+            		throw new CustomerException("SQLParser", "Table " + secondTableName + " is not existed.");
+            	}
+                List<String> header = new ArrayList<String>();
             	for (String attr : firstTable.getAttributes()) {
             		header.add(tableName + "." + attr);
             	}
@@ -243,6 +245,9 @@ public class SQLParser {
             } else{
                 //单表
             	Storage table = metaData.metaJson.query.tableStorageMap.get(tableName);
+            	if (table == null) {
+            		throw new CustomerException("SQLParser", "Table " + tableName + " is not existed.");
+            	}
             	List<String> header = new ArrayList<String>();
             	for (String attr : table.getAttributes()) {
             		header.add(attr);
@@ -466,6 +471,16 @@ public class SQLParser {
         try{
             return arr[0].toUpperCase().equals("USE") && arr[1].toUpperCase().equals("DATABASE") && arr.length == 3;
         } catch(Exception e){
+            return false;
+        }
+    }
+    
+    public Boolean checkLogoutCommand(String str) {
+    	try{
+            return str.toUpperCase().startsWith("LOGOUT") 
+            		|| str.toUpperCase().startsWith("BYE")
+            		|| str.toUpperCase().startsWith("QUIT");
+        }catch(Exception e){
             return false;
         }
     }

@@ -39,6 +39,9 @@ public class Query {
     public void  downLoadTable(String tableName){
         tableStorageMap.remove(tableName);
     }
+    public void saveTable(String tableName) throws IOException {
+    	tableStorageMap.get(tableName).save();
+    }
     
     public TreeSet<JointRow> selectNatural(String tableNameA, String tableNameB,
 	   Vector<BinaryExpression> where, Vector<Boolean> whereAndOr) throws IOException {

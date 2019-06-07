@@ -497,8 +497,7 @@ public class Row implements Comparable<Row> {
 			try {
 				this.readFromFile();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		}
 		

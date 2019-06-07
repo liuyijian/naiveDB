@@ -79,3 +79,4 @@ insert into avengers values (122, 'lyj', null, null, null);
 insert into avengers values (123, 'lyj', null, null, null);
 insert into avengers values (123, 'lyj', null, null, null);
 select * from avengers;
+-- 测试

@@ -56,13 +56,19 @@ public class MetaJson {
             System.out.println("could not load single_meta_json file and create one");
         }
     }
+    
+    public void save() throws IOException {
+        for(String tableName : this.singleMetaJsonObject.keySet()) {
+        	this.query.saveTable(tableName);
+        }
+    }
 
     public void writeBack(){
         try{
             FileUtils.writeStringToFile(new File(path), singleMetaJsonObject.toString(), "UTF-8");
         }
         catch (Exception e) {
-            e.printStackTrace();
+//            e.printStackTrace();
         }
     }
 

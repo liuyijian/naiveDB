@@ -12,7 +12,6 @@ import net.sf.jsqlparser.expression.BinaryExpression;
 import util.CustomerException;
 
 
-// TODO: rename to Table
 public class Storage {
 
 	protected static final Integer INITIAL_NUMBER_OF_ROW = 100;
@@ -60,8 +59,7 @@ public class Storage {
 		}
 		this.offset += this.numberOfCol; // extra bytes for recording isNull-signs 
 
-		// TODO: set a reasonable cache size
-		this.cache = new Cache(this, this.offset * 3);
+		this.cache = new Cache(this, this.offset * 10000);
 		
 		this.types = types;
 		this.attrs = attrs;
@@ -159,6 +157,19 @@ public class Storage {
     	}
     }
     
+    protected void checkNumberOfBytes(Vector<Object> data) {
+    	
+		for (int i = 0; i < this.numberOfCol; ++i) {
+			Object object = data.get(i);
+			if (object instanceof String) {
+				if (this.offsetsInRow.get(i) < ((String) object).length() * 2) {
+					throw new CustomerException("Storage", "checkNumberOfBytes(): Word '"
+				          + object.toString() + "' is too long.");
+				}
+			}
+		}
+    }
+    
     protected void convertType(Vector<Object> data) {
     	
 		for (int i = 0; i < this.numberOfCol; ++i) {
@@ -202,6 +213,7 @@ public class Storage {
 	
 		this.checkNull(data);
 		this.convertType(data);
+		this.checkNumberOfBytes(data);
 		
 		// throw when pks in data contain null value
 		PrimaryKey pk = new PrimaryKey(this.pkTypes, data, this.pkIndexes);
@@ -866,10 +878,10 @@ public class Storage {
     	
     	String left = binaryExpression.getLeftExpression().toString().toUpperCase();
     	String right = binaryExpression.getRightExpression().toString().toUpperCase();
-    	if (this.pkAttrs.contains(left)) {
+    	if (this.pkAttrs.size() == 1 && this.pkAttrs.contains(left)) {
     		return SINGLE_PRIMARY_KEY_IN_LEFT_EXPRESSION;
     	}
-    	else if (this.pkAttrs.contains(right)) {
+    	else if (this.pkAttrs.size() == 1 && this.pkAttrs.contains(right)) {
     		return SINGLE_PRIMARY_KEY_IN_RIGHT_EXPRESSION;
     	}
     	else {

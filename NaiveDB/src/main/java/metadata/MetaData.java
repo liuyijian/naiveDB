@@ -75,6 +75,17 @@ public class MetaData  {
         }
         return String.format("%s is not a registered user", username);
     }
+    
+    public String logout() {
+    	try {
+			metaJson.save();
+	        currentUser = null;
+	        currentDatabase = null;
+	        metaJson = null;
+		} catch (IOException e) {
+		}
+    	return "Bye";
+    }
 
     public boolean checkAuth(String database) {
         // 检查操作是否具有权限
@@ -219,7 +230,7 @@ public class MetaData  {
             FileUtils.writeStringToFile(new File(DATABASES_DIR+"/"+WHOLE_META_FILENAME), wholeMetaJsonObject.toString(), "UTF-8");
         }
         catch (Exception e) {
-            e.printStackTrace();
+//            e.printStackTrace();
         }
     }
     public static void main(String[] args) {
